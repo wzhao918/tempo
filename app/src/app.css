@@ -1,0 +1,63 @@
+/* ─── Global Design Tokens ──────────────────────────────────────── */
+:root {
+  --bg: #0e0e0f;
+  --surface: #161618;
+  --surface2: #1e1e21;
+  --border: #2a2a2e;
+  --amber: #e8a844;
+  --amber-dim: #a07530;
+  --amber-glow: rgba(232, 168, 68, 0.12);
+  --green: #5cb87a;
+  --green-dim: rgba(92, 184, 122, 0.15);
+  --text: #e8e4dc;
+  --text-dim: #7a7870;
+  --text-mid: #a09c94;
+  --rest: #6b8cba;
+  --rest-dim: rgba(107, 140, 186, 0.15);
+  --novel: #b87cc4;
+  --novel-dim: rgba(184, 124, 196, 0.15);
+  --exercise: #5cb87a;
+  --open: #7a9e8a;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ─── Block Type Color Utilities ────────────────────────────────── */
+.color-work { color: var(--amber); }
+.bg-work { background: var(--amber-glow); border-color: var(--amber-dim) !important; color: var(--amber); }
+
+.color-exercise { color: var(--exercise); }
+.bg-exercise { background: var(--green-dim); border-color: rgba(92, 184, 122, 0.3) !important; color: var(--green); }
+
+.color-rest { color: var(--rest); }
+.bg-rest { background: var(--rest-dim); border-color: rgba(107, 140, 186, 0.3) !important; color: var(--rest); }
+
+.color-novel { color: var(--novel); }
+.bg-novel { background: var(--novel-dim); border-color: rgba(184, 124, 196, 0.3) !important; color: var(--novel); }
+
+.color-open { color: var(--open); }
+.bg-open { background: rgba(122, 158, 138, 0.12); border-color: rgba(122, 158, 138, 0.3) !important; color: var(--open); }
+
+.color-admin { color: #c4a87c; }
+.bg-admin { background: rgba(196, 168, 124, 0.1); border-color: rgba(196, 168, 124, 0.3) !important; color: #c4a87c; }
+
+/* ─── Responsive ────────────────────────────────────────────────── */
+@media (max-width: 700px) {
+  .main { grid-template-columns: 1fr; }
+  .sidebar { border-top: 1px solid var(--border); }
+}
+
+/* ─── Animations ────────────────────────────────────────────────── */
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
