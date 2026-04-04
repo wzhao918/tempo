@@ -14,7 +14,7 @@
 </script>
 
 <div class="header">
-  <div class="wordmark">daily companion</div>
+  <div class="wordmark">tempo</div>
   <div class="date-display">
     {dateLine1}<br>{dateLine2}
   </div>
