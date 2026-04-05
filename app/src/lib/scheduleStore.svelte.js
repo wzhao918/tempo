@@ -6,7 +6,7 @@ import {
   getActiveTemplate, getTemplateBlocks, hasAnyTemplates,
   updateBlock as dbUpdateBlock, addBlock as dbAddBlock, removeBlock as dbRemoveBlock,
   getTodayDate, getDay, createDayFromTemplate, getDayBlocks, gradeBlock as dbGradeBlock,
-  finalizePreviousDay,
+  finalizePreviousDay, clearAllData,
 } from './db.js';
 
 // ─── Reactive State ────────────────────────────────────────────
@@ -97,4 +97,14 @@ export async function completeOnboarding(templateId) {
   store.isFirstLaunch = false;
   // Load schedule will create the day instance
   await loadSchedule();
+}
+
+/** Wipe everything and return to onboarding */
+export async function resetToOnboarding() {
+  await clearAllData();
+  store.blocks = [];
+  store.activeTemplateId = null;
+  store.todayDayId = null;
+  store.todayDate = null;
+  store.isFirstLaunch = true;
 }

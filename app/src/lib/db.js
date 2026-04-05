@@ -369,3 +369,12 @@ export async function finalizePreviousDay(previousDate) {
     await generateDailyReport(day.id);
   }
 }
+
+/** Wipe all data — used by "Reset to Onboarding" */
+export async function clearAllData() {
+  await db.execute('DELETE FROM daily_reports');
+  await db.execute('DELETE FROM day_blocks');
+  await db.execute('DELETE FROM days');
+  await db.execute('DELETE FROM template_blocks');
+  await db.execute('DELETE FROM schedule_templates');
+}
