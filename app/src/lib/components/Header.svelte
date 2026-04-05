@@ -1,4 +1,6 @@
 <script>
+  let { currentView = 'dashboard', onNavigate = () => {} } = $props();
+
   let now = $state(new Date());
 
   const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
@@ -14,7 +16,27 @@
 </script>
 
 <div class="header">
-  <div class="wordmark">tempo</div>
+  <div class="left">
+    <div class="wordmark">tempo</div>
+  </div>
+
+  <div class="nav">
+    <button
+      class="nav-item"
+      class:active={currentView === 'dashboard'}
+      onclick={() => onNavigate('dashboard')}
+    >
+      Dashboard
+    </button>
+    <button
+      class="nav-item"
+      class:active={currentView === 'settings'}
+      onclick={() => onNavigate('settings')}
+    >
+      Settings
+    </button>
+  </div>
+
   <div class="date-display">
     {dateLine1}<br>{dateLine2}
   </div>
@@ -28,6 +50,10 @@
     align-items: flex-start;
   }
 
+  .left {
+    flex: 1;
+  }
+
   .wordmark {
     font-family: 'Instrument Serif', serif;
     font-style: italic;
@@ -36,7 +62,37 @@
     letter-spacing: 0.01em;
   }
 
+  .nav {
+    display: flex;
+    gap: 4px;
+  }
+
+  .nav-item {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    color: var(--text-dim);
+    background: none;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    padding: 6px 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .nav-item:hover {
+    color: var(--text-mid);
+    background: var(--surface);
+  }
+
+  .nav-item.active {
+    color: var(--amber);
+    background: var(--amber-glow);
+    border-color: var(--amber-dim);
+  }
+
   .date-display {
+    flex: 1;
     font-family: 'DM Mono', monospace;
     font-size: 14px;
     color: var(--text-dim);

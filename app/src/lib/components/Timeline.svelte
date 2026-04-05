@@ -1,10 +1,11 @@
 <script>
-  import { schedule, getCurrentBlockIndex, getNowMinutes } from '$lib/schedule.js';
+  import { store } from '$lib/scheduleStore.svelte.js';
+  import { getCurrentBlockIndex, getNowMinutes } from '$lib/schedule.js';
   import BlockCard from './BlockCard.svelte';
 
   let now = $state(new Date());
   let nowMins = $derived(now.getHours() * 60 + now.getMinutes());
-  let currentIdx = $derived(getCurrentBlockIndex(nowMins));
+  let currentIdx = $derived(store.blocks.length > 0 ? getCurrentBlockIndex(store.blocks, nowMins) : 0);
 
   $effect(() => {
     const interval = setInterval(() => { now = new Date(); }, 1000);
@@ -14,9 +15,8 @@
   // Scroll active block into view on block change
   let lastBlock = $state(-1);
   $effect(() => {
-    if (currentIdx !== lastBlock) {
+    if (store.blocks.length > 0 && currentIdx !== lastBlock) {
       lastBlock = currentIdx;
-      // Small delay to let DOM update
       setTimeout(() => {
         const el = document.getElementById(`block-${currentIdx}`);
         if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -25,16 +25,18 @@
   });
 </script>
 
+{#if store.blocks.length > 0}
 <div class="timeline-section">
   <div class="section-label">Today's Schedule</div>
   <div class="timeline">
-    {#each schedule as block, i}
+    {#each store.blocks as block, i}
       <div id="block-{i}">
         <BlockCard {block} index={i} {currentIdx} {nowMins} />
       </div>
     {/each}
   </div>
 </div>
+{/if}
 
 <style>
   .timeline-section {

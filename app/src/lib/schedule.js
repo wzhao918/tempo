@@ -1,18 +1,5 @@
-// ─── Schedule Data ─────────────────────────────────────────────
-// This is the default template. Eventually this comes from SQLite.
-export const schedule = [
-  { name: "Deep Work",         emoji: "⚡", start: "06:30", end: "09:00", type: "work",     note: "Build / Code / Claude Code" },
-  { name: "Exercise",          emoji: "🚴", start: "09:00", end: "10:00", type: "exercise", note: "Jog or bike ride + shower" },
-  { name: "Second Work Block", emoji: "🔧", start: "10:00", end: "12:30", type: "work",     note: "Build / Design / Strategy" },
-  { name: "Lunch",             emoji: "🍜", start: "12:30", end: "13:00", type: "open",     note: "Step away from the screen" },
-  { name: "Rest & Recharge",   emoji: "🌙", start: "13:00", end: "15:00", type: "rest",     note: "Nap / Free time / Consume" },
-  { name: "Busy Work & Admin", emoji: "📋", start: "15:00", end: "17:30", type: "admin",    note: "Email / Docs / Small tasks" },
-  { name: "Open Time",         emoji: "🌅", start: "17:30", end: "21:00", type: "open",     note: "Dinner / Decompress / Social" },
-  { name: "Novel",             emoji: "✍️",  start: "21:00", end: "23:00", type: "novel",    note: "Tokyo Syndrome" },
-  { name: "Wind Down",         emoji: "🌙", start: "23:00", end: "06:30", type: "rest",     note: "Rest. You earned it." },
-];
-
 // ─── Time Helpers ──────────────────────────────────────────────
+// Pure utility functions. No data, no state. Import from anywhere.
 
 /** Convert "HH:MM" string to minutes since midnight */
 export function timeToMinutes(t) {
@@ -55,9 +42,9 @@ export function getNowMinutes() {
 }
 
 /** Find the index of the currently active block */
-export function getCurrentBlockIndex(nowMins) {
-  for (let i = 0; i < schedule.length; i++) {
-    const b = schedule[i];
+export function getCurrentBlockIndex(blockList, nowMins) {
+  for (let i = 0; i < blockList.length; i++) {
+    const b = blockList[i];
     const s = timeToMinutes(b.start);
     let e = timeToMinutes(b.end);
     if (e <= s) e += 24 * 60; // crosses midnight
@@ -65,7 +52,7 @@ export function getCurrentBlockIndex(nowMins) {
     if (n < s && e > 24 * 60) n += 24 * 60;
     if (n >= s && n < e) return i;
   }
-  return schedule.length - 1;
+  return Math.max(0, blockList.length - 1);
 }
 
 /** Get the duration of a block in minutes */

@@ -1,24 +1,26 @@
 <script>
-  import { schedule, getCurrentBlockIndex, getNowMinutes, getMinutesLeft, timeToMinutes } from '$lib/schedule.js';
+  import { store } from '$lib/scheduleStore.svelte.js';
+  import { getCurrentBlockIndex, getNowMinutes, getMinutesLeft, timeToMinutes } from '$lib/schedule.js';
 
   let now = $state(new Date());
   let nowMins = $derived(now.getHours() * 60 + now.getMinutes());
-  let currentIdx = $derived(getCurrentBlockIndex(nowMins));
-  let current = $derived(schedule[currentIdx]);
+  let currentIdx = $derived(store.blocks.length > 0 ? getCurrentBlockIndex(store.blocks, nowMins) : 0);
+  let current = $derived(store.blocks[currentIdx]);
 
-  // Stats calculations
   let blocksLeft = $derived.by(() => {
+    if (store.blocks.length === 0) return 0;
     let count = 0;
-    for (let i = currentIdx; i < schedule.length - 1; i++) {
-      if (schedule[i].type !== 'rest') count++;
+    for (let i = currentIdx; i < store.blocks.length - 1; i++) {
+      if (store.blocks[i].type !== 'rest') count++;
     }
     return Math.max(0, count);
   });
 
   let hoursLeft = $derived.by(() => {
+    if (store.blocks.length === 0 || !current) return '0.0';
     let total = 0;
-    for (let i = currentIdx; i < schedule.length - 1; i++) {
-      const b = schedule[i];
+    for (let i = currentIdx; i < store.blocks.length - 1; i++) {
+      const b = store.blocks[i];
       if (b.type !== 'rest') {
         const s = timeToMinutes(b.start);
         let e = timeToMinutes(b.end);
@@ -26,7 +28,6 @@
         total += (e - s) / 60;
       }
     }
-    // Subtract elapsed time in current block
     const minsLeft = getMinutesLeft(current, nowMins);
     const blockDuration = (() => {
       const s = timeToMinutes(current.start);
@@ -40,16 +41,19 @@
   });
 
   let dayProgress = $derived.by(() => {
-    const dayStart = 6.5 * 60; // 6:30am
-    const dayEnd = 23 * 60;    // 11:00pm
+    if (store.blocks.length === 0) return 0;
+    const dayStart = timeToMinutes(store.blocks[0].start);
+    const lastBlock = store.blocks[store.blocks.length - 1];
+    const dayEnd = timeToMinutes(lastBlock.start);
     const dayTotal = dayEnd - dayStart;
+    if (dayTotal <= 0) return 0;
     const elapsed = nowMins - dayStart;
     return Math.min(100, Math.max(0, Math.round((elapsed / dayTotal) * 100)));
   });
 
   let deepWorkHours = $derived.by(() => {
     let total = 0;
-    for (const b of schedule) {
+    for (const b of store.blocks) {
       if (b.type === 'work') {
         const s = timeToMinutes(b.start);
         let e = timeToMinutes(b.end);
@@ -60,7 +64,6 @@
     return total.toFixed(1);
   });
 
-  // Notification toggles
   let transitionsOn = $state(true);
   let warningsOn = $state(true);
 
@@ -70,6 +73,7 @@
   });
 </script>
 
+{#if store.blocks.length > 0}
 <div class="sidebar">
   <div class="sidebar-card">
     <div class="sidebar-card-title">Today at a Glance</div>
@@ -107,6 +111,7 @@
     </div>
   </div>
 </div>
+{/if}
 
 <style>
   .sidebar {

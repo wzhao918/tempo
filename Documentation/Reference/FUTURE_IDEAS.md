@@ -44,6 +44,9 @@ Ideas that came up during discovery but are out of scope for v1. Preserved here 
 - **Themes** — light mode, custom color schemes.
 - **Sound notifications** — audio cues at transitions (the HTML had this as "coming soon").
 
+- **Color schemes** - user selects from templates
+- **Animations** - e.g. mouse hover animations, grading and completion animations (little "dopamine hits"), etc.
+
 ---
 
 _This is a living document. Add ideas freely. Move items to active scope when they're being built._

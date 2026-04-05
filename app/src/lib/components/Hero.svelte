@@ -1,5 +1,6 @@
 <script>
-  import { schedule, getCurrentBlockIndex, getNowMinutes, getBlockColor, getBlockHex, getMinutesLeft, formatCountdown } from '$lib/schedule.js';
+  import { store } from '$lib/scheduleStore.svelte.js';
+  import { getCurrentBlockIndex, getBlockColor, getBlockHex, getMinutesLeft, formatCountdown } from '$lib/schedule.js';
 
   let now = $state(new Date());
   let nowMins = $derived(now.getHours() * 60 + now.getMinutes());
@@ -8,14 +9,14 @@
   let minutes = $derived(String(now.getMinutes()).padStart(2, '0'));
   let seconds = $derived(String(now.getSeconds()).padStart(2, '0'));
 
-  let currentIdx = $derived(getCurrentBlockIndex(nowMins));
-  let current = $derived(schedule[currentIdx]);
-  let color = $derived(getBlockColor(current.type));
-  let hex = $derived(getBlockHex(current.type));
+  let currentIdx = $derived(store.blocks.length > 0 ? getCurrentBlockIndex(store.blocks, nowMins) : 0);
+  let current = $derived(store.blocks[currentIdx]);
+  let color = $derived(current ? getBlockColor(current.type) : 'work');
+  let hex = $derived(current ? getBlockHex(current.type) : '#e8a844');
 
-  let nextIdx = $derived((currentIdx + 1) % schedule.length);
-  let next = $derived(schedule[nextIdx]);
-  let minsLeft = $derived(getMinutesLeft(current, nowMins));
+  let nextIdx = $derived(store.blocks.length > 0 ? (currentIdx + 1) % store.blocks.length : 0);
+  let next = $derived(store.blocks[nextIdx]);
+  let minsLeft = $derived(current ? getMinutesLeft(current, nowMins) : 0);
   let isUrgent = $derived(minsLeft <= 5);
 
   $effect(() => {
@@ -24,6 +25,7 @@
   });
 </script>
 
+{#if current}
 <div class="hero">
   <div class="clock-row">
     <div class="clock">
@@ -37,10 +39,11 @@
 
   <div class="next-row">
     <span class="next-label">Next</span>
-    <span class="next-block">{next.emoji} {next.name}</span>
+    <span class="next-block">{next?.emoji} {next?.name}</span>
     <span class="countdown" class:urgent={isUrgent}>in {formatCountdown(minsLeft)}</span>
   </div>
 </div>
+{/if}
 
 <style>
   .hero {
