@@ -201,3 +201,172 @@ export async function addBlocksToTemplate(templateId, blocks) {
     );
   }
 }
+
+// ─── Day Instance Functions ────────────────────────────────────
+
+/** Get the date string for "today" based on the day boundary (first block's start time) */
+export function getTodayDate(templateBlocks) {
+  if (!templateBlocks || templateBlocks.length === 0) {
+    return new Date().toISOString().split('T')[0];
+  }
+
+  const now = new Date();
+  const nowMins = now.getHours() * 60 + now.getMinutes();
+
+  // Day boundary = first block's start time
+  const firstStart = templateBlocks[0].start || templateBlocks[0].start_time;
+  const [bh, bm] = firstStart.split(':').map(Number);
+  const boundaryMins = bh * 60 + bm;
+
+  // If current time is before the boundary, we're still in "yesterday's" day
+  if (nowMins < boundaryMins) {
+    const yesterday = new Date(now);
+    yesterday.setDate(yesterday.getDate() - 1);
+    return yesterday.toISOString().split('T')[0];
+  }
+
+  return now.toISOString().split('T')[0];
+}
+
+/** Check if a day instance exists for the given date */
+export async function getDay(date) {
+  const results = await db.select('SELECT * FROM days WHERE date = $1', [date]);
+  return results[0] || null;
+}
+
+/** Create a day instance by copying blocks from the active template */
+export async function createDayFromTemplate(date, templateId) {
+  // Create the day record
+  const dayResult = await db.execute(
+    'INSERT INTO days (date, template_id) VALUES ($1, $2)',
+    [date, templateId]
+  );
+  const dayId = dayResult.lastInsertId;
+
+  // Copy template blocks into day_blocks
+  const templateBlocks = await db.select(
+    'SELECT sort_order, name, emoji, type, start_time, end_time, note FROM template_blocks WHERE template_id = $1 ORDER BY sort_order',
+    [templateId]
+  );
+
+  for (const b of templateBlocks) {
+    await db.execute(
+      `INSERT INTO day_blocks (day_id, sort_order, name, emoji, type, start_time, end_time, note)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+      [dayId, b.sort_order, b.name, b.emoji, b.type, b.start_time, b.end_time, b.note]
+    );
+  }
+
+  return dayId;
+}
+
+/** Get all blocks for a day, mapped to component shape */
+export async function getDayBlocks(dayId) {
+  const rows = await db.select(
+    'SELECT id, sort_order, name, emoji, type, start_time, end_time, note, grade, grade_note, graded_at FROM day_blocks WHERE day_id = $1 ORDER BY sort_order',
+    [dayId]
+  );
+  return rows.map(row => ({
+    id: row.id,
+    sort_order: row.sort_order,
+    name: row.name,
+    emoji: row.emoji,
+    type: row.type,
+    start: row.start_time,
+    end: row.end_time,
+    note: row.note,
+    grade: row.grade,
+    gradeNote: row.grade_note,
+    gradedAt: row.graded_at,
+  }));
+}
+
+/** Grade a day block (seals it permanently) */
+export async function gradeBlock(blockId, grade, gradeNote) {
+  await db.execute(
+    `UPDATE day_blocks SET grade = $1, grade_note = $2, graded_at = datetime('now') WHERE id = $3`,
+    [grade, gradeNote || '', blockId]
+  );
+}
+
+// ─── Daily Report Functions ────────────────────────────────────
+
+/** Generate a daily report for a given day */
+export async function generateDailyReport(dayId) {
+  // Check if report already exists
+  const existing = await db.select('SELECT id FROM daily_reports WHERE day_id = $1', [dayId]);
+  if (existing.length > 0) return existing[0].id;
+
+  const blocks = await getDayBlocks(dayId);
+  const day = await db.select('SELECT date FROM days WHERE id = $1', [dayId]);
+  const date = day[0]?.date || 'Unknown';
+
+  // Calculate summary stats
+  const totalBlocks = blocks.filter(b => b.type !== 'rest').length;
+  const gradedBlocks = blocks.filter(b => b.grade !== null && b.grade !== undefined);
+  const ungradedBlocks = totalBlocks - gradedBlocks.length;
+  const avgGrade = gradedBlocks.length > 0
+    ? (gradedBlocks.reduce((sum, b) => sum + b.grade, 0) / gradedBlocks.length).toFixed(1)
+    : null;
+
+  // Hours by type
+  const hoursByType = {};
+  for (const b of blocks) {
+    const [sh, sm] = b.start.split(':').map(Number);
+    const [eh, em] = b.end.split(':').map(Number);
+    let startMins = sh * 60 + sm;
+    let endMins = eh * 60 + em;
+    if (endMins <= startMins) endMins += 24 * 60;
+    const hours = (endMins - startMins) / 60;
+    hoursByType[b.type] = (hoursByType[b.type] || 0) + hours;
+  }
+
+  const summary = JSON.stringify({
+    date,
+    totalBlocks,
+    gradedCount: gradedBlocks.length,
+    ungradedCount: ungradedBlocks,
+    averageGrade: avgGrade,
+    hoursByType,
+    blocks: blocks.map(b => ({
+      name: b.name,
+      type: b.type,
+      grade: b.grade,
+      gradeNote: b.gradeNote,
+    })),
+  });
+
+  const result = await db.execute(
+    'INSERT INTO daily_reports (day_id, summary) VALUES ($1, $2)',
+    [dayId, summary]
+  );
+  return result.lastInsertId;
+}
+
+/** Get all daily reports, most recent first */
+export async function getDailyReports() {
+  const rows = await db.select(`
+    SELECT dr.id, dr.day_id, dr.generated_at, dr.summary, d.date
+    FROM daily_reports dr
+    JOIN days d ON d.id = dr.day_id
+    ORDER BY d.date DESC
+  `);
+  return rows.map(r => ({
+    ...r,
+    summary: JSON.parse(r.summary || '{}'),
+  }));
+}
+
+/** Finalize a previous day: generate its report if it has any grades */
+export async function finalizePreviousDay(previousDate) {
+  const day = await getDay(previousDate);
+  if (!day) return;
+
+  const blocks = await getDayBlocks(day.id);
+  const hasAnyGrades = blocks.some(b => b.grade !== null && b.grade !== undefined);
+
+  // Generate report if there are any grades (or even if not — ungraded is signal)
+  if (blocks.length > 0) {
+    await generateDailyReport(day.id);
+  }
+}
