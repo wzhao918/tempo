@@ -24,7 +24,6 @@ const DEFAULT_BLOCKS = [
 export async function initDatabase() {
   db = await Database.load('sqlite:tempo.db');
   await runMigrations();
-  await seedDefaultTemplate();
 }
 
 async function runMigrations() {
