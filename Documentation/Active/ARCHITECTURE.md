@@ -1,6 +1,6 @@
 # Daily Companion — Architecture
 
-**Status:** Draft v0.1 — Discovery phase, pre-implementation.
+**Status:** v0.3 — Core infrastructure complete. SQLite, reactive store, template editor, and onboarding flow are all built and functional. Grading, daily reports, and notifications remain.
 
 ---
 
@@ -8,7 +8,7 @@
 
 A personal daily schedule manager that runs as a native desktop app. Shows your day as a timeline of blocks, tracks what you're doing right now, nudges you at transitions, and lets you self-grade each block when it's done. Generates a daily report at midnight.
 
-Built for one user (Warren) but architected so the door stays open for a multi-user product (mobile, cloud) without a rewrite.
+Built for personal use, but architected so the door stays open for a multi-user product (mobile, cloud) without a rewrite. Onboarding flow supports any new user out of the box.
 
 ---
 
@@ -179,4 +179,4 @@ v1 is: app runs, shows today's schedule from template, tracks current block, fir
 
 ---
 
-_Last verified against codebase: 2026-04-04_
+_Last verified against codebase: 2026-04-04 (documentation alignment session)_
