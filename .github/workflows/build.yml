@@ -1,7 +1,17 @@
 name: Build Installers
 
 on:
-  workflow_dispatch:  # trigger manually from GitHub Actions tab → "Run workflow"
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: 'Which platform to build'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - windows
+          - macos
 
 jobs:
   build:
@@ -10,12 +20,16 @@ jobs:
         include:
           - platform: windows-latest
             target: x86_64-pc-windows-msvc
+            os_name: windows
           - platform: macos-latest
             target: aarch64-apple-darwin
+            os_name: macos
           - platform: macos-latest
             target: x86_64-apple-darwin
+            os_name: macos
 
     runs-on: ${{ matrix.platform }}
+    if: ${{ github.event.inputs.platform == 'all' || github.event.inputs.platform == matrix.os_name }}
 
     steps:
       - name: Checkout code
