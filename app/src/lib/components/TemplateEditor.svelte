@@ -5,12 +5,12 @@
 
   // Block type options
   const BLOCK_TYPES = [
-    { value: 'work',     label: 'Work / Focus',  emoji: '⚡' },
-    { value: 'exercise', label: 'Active',         emoji: '🚴' },
-    { value: 'rest',     label: 'Rest',           emoji: '🌙' },
-    { value: 'open',     label: 'Open',           emoji: '🌅' },
-    { value: 'admin',    label: 'Admin',          emoji: '📋' },
-    { value: 'novel',    label: 'Creative',       emoji: '✍️' },
+    { value: 'work',     label: 'Work / Focus',  emoji: '\u26A1' },
+    { value: 'exercise', label: 'Active',         emoji: '\uD83D\uDEB4' },
+    { value: 'rest',     label: 'Rest',           emoji: '\uD83C\uDF19' },
+    { value: 'open',     label: 'Open',           emoji: '\uD83C\uDF05' },
+    { value: 'admin',    label: 'Admin',          emoji: '\uD83D\uDCCB' },
+    { value: 'novel',    label: 'Creative',       emoji: '\u270D\uFE0F' },
   ];
 
   // ─── Local editing state ─────────────────────────────────────
@@ -22,14 +22,11 @@
   // ─── Drag state ──────────────────────────────────────────────
   let dragIndex = $state(null);       // index of block being dragged
   let dragOverIndex = $state(null);   // index of the drop target gap
-  let dragY = $state(0);              // current mouse Y for the floating block
-  let dragStartY = $state(0);        // mouse Y when drag began
-  let dragOffsetY = $state(0);       // offset within the grabbed block
   let isDragging = $state(false);
 
   // ─── New block staging ───────────────────────────────────────
   let showNewBlockForm = $state(false);
-  let newBlock = $state({ name: '', emoji: '📌', type: 'work', duration: 60, note: '' });
+  let newBlock = $state({ name: '', type: 'work', startTime: '09:00', duration: 60, note: '' });
 
   // Initialize editing state from props
   $effect(() => {
@@ -44,20 +41,11 @@
     hasChanges = true;
   }
 
-  // ─── Time recalculation ──────────────────────────────────────
-  // Walk the list top-to-bottom. Each block starts where the previous ended.
-  // Durations are preserved. The first block keeps its start time.
-  function recalculateTimes(blocks) {
-    if (blocks.length === 0) return blocks;
-
-    const result = [...blocks];
-    for (let i = 1; i < result.length; i++) {
-      const prevEnd = result[i - 1].end;
-      const currentDuration = getMinutesBetween(result[i].start, result[i].end);
-      result[i] = { ...result[i], start: prevEnd };
-      result[i].end = addMinutes(prevEnd, currentDuration);
-    }
-    return result;
+  // ─── Time helpers ────────────────────────────────────────────
+  function addMinutes(timeStr, mins) {
+    const [h, m] = timeStr.split(':').map(Number);
+    const total = (h * 60 + m + mins) % (24 * 60);
+    return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
   }
 
   function getMinutesBetween(start, end) {
@@ -67,12 +55,6 @@
     let endMins = eh * 60 + em;
     if (endMins <= startMins) endMins += 24 * 60; // crosses midnight
     return endMins - startMins;
-  }
-
-  function addMinutes(timeStr, mins) {
-    const [h, m] = timeStr.split(':').map(Number);
-    const total = (h * 60 + m + mins) % (24 * 60);
-    return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
   }
 
   function formatDuration(mins) {
@@ -91,7 +73,16 @@
 
   // ─── Staged new block ───────────────────────────────────────
   function openNewBlockForm() {
-    newBlock = { name: '', emoji: '📌', type: 'work', duration: 60, note: '' };
+    // Default start time: end of the last block, or 09:00
+    let defaultStart = '09:00';
+    if (editingBlocks.length > 0) {
+      const lastBlock = editingBlocks[editingBlocks.length - 1];
+      // If last block is sleep/rest crossing midnight, don't use its end
+      if (lastBlock.type !== 'rest' || lastBlock.end > lastBlock.start) {
+        defaultStart = lastBlock.end;
+      }
+    }
+    newBlock = { name: '', type: 'work', startTime: defaultStart, duration: 60, note: '' };
     showNewBlockForm = true;
   }
 
@@ -102,50 +93,19 @@
   function confirmNewBlock() {
     if (!newBlock.name.trim()) return;
 
-    // Insert at the end (above the last block if it's rest/sleep)
-    const lastBlock = editingBlocks[editingBlocks.length - 1];
-    let insertIndex = editingBlocks.length;
+    const endTime = addMinutes(newBlock.startTime, newBlock.duration);
 
-    // If last block is rest type, insert before it
-    if (lastBlock && lastBlock.type === 'rest') {
-      insertIndex = editingBlocks.length - 1;
-    }
+    const created = {
+      name: newBlock.name,
+      emoji: '',
+      type: newBlock.type,
+      start: newBlock.startTime,
+      end: endTime,
+      note: newBlock.note,
+      isNew: true,
+    };
 
-    // The block above the insert point donates time
-    const donorIndex = insertIndex - 1;
-    if (donorIndex >= 0) {
-      const donor = editingBlocks[donorIndex];
-      const donorDuration = getMinutesBetween(donor.start, donor.end);
-      const requestedDuration = newBlock.duration;
-
-      // Ensure donor keeps at least 15 minutes
-      if (donorDuration - requestedDuration < 15) {
-        alert(`Not enough time in "${donor.name}" to create this block. Shorten the duration or choose a different spot.`);
-        return;
-      }
-
-      // Shrink the donor
-      const newDonorEnd = addMinutes(donor.start, donorDuration - requestedDuration);
-      editingBlocks[donorIndex] = { ...donor, end: newDonorEnd };
-
-      // Create the new block in the freed time
-      const created = {
-        name: newBlock.name,
-        emoji: newBlock.emoji,
-        type: newBlock.type,
-        start: newDonorEnd,
-        end: addMinutes(newDonorEnd, requestedDuration),
-        note: newBlock.note,
-        isNew: true,
-      };
-
-      editingBlocks = [
-        ...editingBlocks.slice(0, insertIndex),
-        created,
-        ...editingBlocks.slice(insertIndex),
-      ];
-    }
-
+    editingBlocks = [...editingBlocks, created];
     hasChanges = true;
     showNewBlockForm = false;
   }
@@ -156,37 +116,15 @@
     if (block.id) {
       removedIds = [...removedIds, block.id];
     }
-
-    // Give the removed block's time to the block above it (or below if first)
-    const duration = getMinutesBetween(block.start, block.end);
-    if (index > 0) {
-      const above = editingBlocks[index - 1];
-      editingBlocks[index - 1] = { ...above, end: addMinutes(above.start, getMinutesBetween(above.start, above.end) + duration) };
-    } else if (editingBlocks.length > 1) {
-      const below = editingBlocks[index + 1];
-      editingBlocks[index + 1] = { ...below, start: block.start };
-    }
-
     editingBlocks = editingBlocks.filter((_, i) => i !== index);
     hasChanges = true;
   }
 
   // ─── Drag-to-reorder ────────────────────────────────────────
   function onDragStart(e, index) {
-    // Prevent text selection during drag
     e.preventDefault();
-
     dragIndex = index;
     isDragging = true;
-    dragStartY = e.clientY;
-    dragY = e.clientY;
-
-    // Calculate offset within the block element
-    const blockEl = e.target.closest('.block-row');
-    if (blockEl) {
-      const rect = blockEl.getBoundingClientRect();
-      dragOffsetY = e.clientY - rect.top;
-    }
 
     window.addEventListener('mousemove', onDragMove);
     window.addEventListener('mouseup', onDragEnd);
@@ -194,9 +132,7 @@
 
   function onDragMove(e) {
     if (!isDragging) return;
-    dragY = e.clientY;
 
-    // Determine which gap we're hovering over
     const container = document.querySelector('.block-list');
     if (!container) return;
 
@@ -215,16 +151,10 @@
     }
 
     if (newOverIndex === null) {
-      // Below all blocks
       newOverIndex = editingBlocks.length;
     }
 
-    // Adjust: if dragging down, the target index shifts
-    if (newOverIndex > dragIndex) {
-      dragOverIndex = newOverIndex;
-    } else {
-      dragOverIndex = newOverIndex;
-    }
+    dragOverIndex = newOverIndex;
   }
 
   function onDragEnd() {
@@ -232,11 +162,9 @@
     window.removeEventListener('mouseup', onDragEnd);
 
     if (dragIndex !== null && dragOverIndex !== null && dragOverIndex !== dragIndex) {
-      // Move the block
       const moved = editingBlocks[dragIndex];
       let newBlocks = editingBlocks.filter((_, i) => i !== dragIndex);
 
-      // Adjust insert index since we removed an item
       let insertAt = dragOverIndex;
       if (dragOverIndex > dragIndex) {
         insertAt = dragOverIndex - 1;
@@ -248,8 +176,7 @@
         ...newBlocks.slice(insertAt),
       ];
 
-      // Recalculate times — durations preserved, positions updated
-      editingBlocks = recalculateTimes(newBlocks);
+      editingBlocks = newBlocks;
       hasChanges = true;
     }
 
@@ -289,12 +216,12 @@
             onmousedown={(e) => onDragStart(e, i)}
             title="Drag to reorder"
           >
-            <span class="drag-dots">⠿</span>
+            <span class="drag-dots">\u2837</span>
             <span class="block-row-number">{i + 1}</span>
           </div>
 
           <div class="block-time-badge">
-            {block.start} – {block.end}
+            {block.start} \u2013 {block.end}
             <span class="block-duration-badge">{formatDuration(getMinutesBetween(block.start, block.end))}</span>
           </div>
 
@@ -302,23 +229,12 @@
         </div>
 
         <div class="field-grid">
-          <div class="field">
+          <div class="field field-name">
             <label>Name</label>
             <input
               type="text"
               value={block.name}
               oninput={(e) => updateField(i, 'name', e.target.value)}
-            />
-          </div>
-
-          <div class="field field-small">
-            <label>Emoji</label>
-            <input
-              type="text"
-              value={block.emoji}
-              oninput={(e) => updateField(i, 'emoji', e.target.value)}
-              maxlength="4"
-              class="emoji-input"
             />
           </div>
 
@@ -371,13 +287,9 @@
     <div class="new-block-stage">
       <div class="stage-header">New Block</div>
       <div class="stage-grid">
-        <div class="field">
+        <div class="field field-name">
           <label>Name</label>
           <input type="text" bind:value={newBlock.name} placeholder="Block name" />
-        </div>
-        <div class="field field-small">
-          <label>Emoji</label>
-          <input type="text" bind:value={newBlock.emoji} maxlength="4" class="emoji-input" />
         </div>
         <div class="field">
           <label>Type</label>
@@ -386,6 +298,10 @@
               <option value={t.value}>{t.emoji} {t.label}</option>
             {/each}
           </select>
+        </div>
+        <div class="field field-small">
+          <label>Start</label>
+          <input type="time" bind:value={newBlock.startTime} />
         </div>
         <div class="field field-small">
           <label>Duration</label>
@@ -403,9 +319,6 @@
           <label>Note</label>
           <input type="text" bind:value={newBlock.note} placeholder="What's this block for?" />
         </div>
-      </div>
-      <div class="stage-info">
-        Time will be taken from the block above the insert point.
       </div>
       <div class="stage-actions">
         <button class="grade-cancel" onclick={cancelNewBlock}>Cancel</button>
@@ -442,36 +355,39 @@
     border: 1px solid var(--border);
     border-radius: 10px;
     padding: 16px 18px;
-    transition: transform 0.2s ease, box-shadow 0.2s ease, margin-top 0.2s ease;
+    transition: transform 0.3s cubic-bezier(0.2, 0, 0, 1), box-shadow 0.3s ease, opacity 0.3s ease;
     position: relative;
   }
 
   /* Drag feedback */
   .block-row.dragging {
-    opacity: 0.3;
-    transform: scale(0.98);
+    opacity: 0.4;
+    transform: scale(0.96);
+    box-shadow: 0 0 0 1px var(--amber-dim);
   }
 
   .block-row.drag-above::before {
     content: '';
     position: absolute;
     top: -8px;
-    left: 0;
-    right: 0;
-    height: 3px;
+    left: -4px;
+    right: -4px;
+    height: 4px;
     background: var(--amber);
-    border-radius: 2px;
+    border-radius: 4px;
+    box-shadow: 0 0 12px var(--amber), 0 0 4px var(--amber);
   }
 
   .block-row.drag-below::after {
     content: '';
     position: absolute;
     bottom: -8px;
-    left: 0;
-    right: 0;
-    height: 3px;
+    left: -4px;
+    right: -4px;
+    height: 4px;
     background: var(--amber);
-    border-radius: 2px;
+    border-radius: 4px;
+    box-shadow: 0 0 12px var(--amber), 0 0 4px var(--amber);
   }
 
   .block-row-header {
@@ -487,25 +403,28 @@
     align-items: center;
     gap: 8px;
     cursor: grab;
-    padding: 2px 4px;
-    border-radius: 4px;
-    transition: background 0.15s;
+    padding: 4px 8px;
+    border-radius: 6px;
+    transition: background 0.15s, box-shadow 0.15s;
     user-select: none;
   }
 
   .drag-handle:hover {
     background: var(--surface2);
+    box-shadow: 0 0 0 1px var(--border);
   }
 
   .drag-handle:active {
     cursor: grabbing;
+    background: var(--amber-glow);
   }
 
   .drag-dots {
-    font-size: 16px;
+    font-size: 18px;
     color: var(--text-dim);
     line-height: 1;
     letter-spacing: -1px;
+    transition: color 0.15s;
   }
 
   .drag-handle:hover .drag-dots {
@@ -563,7 +482,7 @@
 
   .field-grid {
     display: grid;
-    grid-template-columns: 1fr auto 1fr auto auto;
+    grid-template-columns: 2fr 1fr auto auto;
     gap: 10px;
     align-items: end;
   }
@@ -615,11 +534,6 @@
     color: var(--text);
   }
 
-  .emoji-input {
-    text-align: center;
-    font-size: 18px !important;
-  }
-
   .field-small {
     min-width: 80px;
   }
@@ -649,20 +563,13 @@
 
   .stage-grid {
     display: grid;
-    grid-template-columns: 1fr auto 1fr auto;
+    grid-template-columns: 2fr 1fr auto auto;
     gap: 10px;
     align-items: end;
   }
 
   .stage-grid .field-wide {
     grid-column: 1 / -1;
-  }
-
-  .stage-info {
-    font-size: 12px;
-    color: var(--text-dim);
-    margin-top: 12px;
-    font-style: italic;
   }
 
   .stage-actions {

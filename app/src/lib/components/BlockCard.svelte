@@ -9,10 +9,11 @@
   let duration = $derived(getBlockDuration(block));
   let color = $derived(getBlockColor(block.type));
 
-  let isActive = $derived(index === currentIdx);
-  let isPast = $derived(endMins <= nowMins && index < currentIdx);
-  let distance = $derived(Math.abs(index - currentIdx));
-  let isCollapsed = $derived(distance > 2);
+  let crossesMidnight = $derived(endMins <= startMins);
+  let isActive = $derived(currentIdx >= 0 && index === currentIdx);
+  let isPast = $derived(!crossesMidnight && endMins <= nowMins && !isActive);
+  let distance = $derived(currentIdx >= 0 ? Math.abs(index - currentIdx) : 999);
+  let isCollapsed = $derived(currentIdx >= 0 && distance > 2);
   let isGraded = $derived(block.grade !== null && block.grade !== undefined);
   let needsGrading = $derived(isPast && !isGraded && block.type !== 'rest');
 
@@ -39,7 +40,7 @@
 <div class="block-item" class:active={isActive} class:past={isPast} class:collapsed={isCollapsed} class:needs-grading={needsGrading} class:graded={isGraded}>
   <div class="block-card">
     <div class="block-header">
-      <div class="block-name"><span class="block-emoji">{block.emoji}</span>{block.name}</div>
+      <div class="block-name">{block.name}</div>
       <div class="block-header-right">
         {#if isGraded}
           <div class="grade-badge" class:grade-high={block.grade >= 8} class:grade-mid={block.grade >= 5 && block.grade < 8} class:grade-low={block.grade < 5}>
@@ -207,11 +208,6 @@
     font-family: 'DM Mono', monospace;
     font-size: 13px;
     color: var(--text-dim);
-  }
-
-  .block-emoji {
-    font-size: 18px;
-    margin-right: 8px;
   }
 
   .block-duration {
@@ -419,10 +415,6 @@
   .block-item.collapsed .block-name {
     font-size: 14px;
     color: var(--text-dim);
-  }
-
-  .block-item.collapsed .block-emoji {
-    font-size: 15px;
   }
 
   .block-item.collapsed .block-time {

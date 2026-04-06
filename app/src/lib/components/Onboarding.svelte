@@ -14,107 +14,88 @@
   let generatedBlocks = $state([]);
   let editorRef = $state(null);
 
+  function addMins(timeStr, mins) {
+    const [h, m] = timeStr.split(':').map(Number);
+    const total = (h * 60 + m + mins) % (24 * 60);
+    return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
+  }
+
   function generateBlocks() {
     const blocks = [];
 
-    if (includeMeals) {
-      // Wake → Lunch
-      blocks.push({
-        name: 'Morning Block',
-        emoji: '⚡',
-        type: 'work',
-        start: wakeTime,
-        end: lunchTime,
-        note: '',
-      });
+    // Morning focus block: starts at wake time, 2 hours
+    blocks.push({
+      name: 'Morning Focus',
+      emoji: '',
+      type: 'work',
+      start: wakeTime,
+      end: addMins(wakeTime, 120),
+      note: '',
+    });
 
-      // Lunch
-      const [lh, lm] = lunchTime.split(':').map(Number);
-      const lunchEnd = `${String(lh).padStart(2, '0')}:${String(lm + 30).padStart(2, '0')}`;
+    if (includeMeals) {
+      // Lunch: 1 hour at the specified time
       blocks.push({
         name: 'Lunch',
-        emoji: '🍜',
+        emoji: '',
         type: 'open',
         start: lunchTime,
-        end: lunchEnd,
-        note: 'Step away from the screen',
-      });
-
-      // Lunch → Dinner
-      blocks.push({
-        name: 'Afternoon Block',
-        emoji: '🔧',
-        type: 'work',
-        start: lunchEnd,
-        end: dinnerTime,
+        end: addMins(lunchTime, 60),
         note: '',
       });
 
-      // Dinner
-      const [dh, dm] = dinnerTime.split(':').map(Number);
-      const dinnerEnd = `${String(dh + 1).padStart(2, '0')}:${String(dm).padStart(2, '0')}`;
+      // Afternoon focus: starts 1hr after lunch, 2 hours
+      const afternoonStart = addMins(lunchTime, 120);
+      blocks.push({
+        name: 'Afternoon Focus',
+        emoji: '',
+        type: 'work',
+        start: afternoonStart,
+        end: addMins(afternoonStart, 120),
+        note: '',
+      });
+
+      // Dinner: 1 hour at the specified time
       blocks.push({
         name: 'Dinner',
-        emoji: '🍽️',
+        emoji: '',
         type: 'open',
         start: dinnerTime,
-        end: dinnerEnd,
-        note: 'Eat and recharge',
-      });
-
-      // Dinner → Bed
-      blocks.push({
-        name: 'Evening',
-        emoji: '🌅',
-        type: 'open',
-        start: dinnerEnd,
-        end: bedTime,
-        note: 'Free time',
-      });
-    } else {
-      // No meals — split into morning, midday rest, afternoon, evening
-      const [wh] = wakeTime.split(':').map(Number);
-      const [bh] = bedTime.split(':').map(Number);
-      const midpoint = Math.floor((wh + bh) / 2);
-      const midTime = `${String(midpoint).padStart(2, '0')}:00`;
-      const restEnd = `${String(midpoint + 1).padStart(2, '0')}:00`;
-
-      blocks.push({
-        name: 'Morning Block',
-        emoji: '⚡',
-        type: 'work',
-        start: wakeTime,
-        end: midTime,
+        end: addMins(dinnerTime, 60),
         note: '',
       });
-
+    } else {
+      // No meals — just add an afternoon block
+      const [wh] = wakeTime.split(':').map(Number);
+      const afternoonStart = `${String(wh + 4).padStart(2, '0')}:00`;
       blocks.push({
-        name: 'Midday Break',
-        emoji: '🌙',
-        type: 'rest',
-        start: midTime,
-        end: restEnd,
-        note: 'Rest and recharge',
-      });
-
-      blocks.push({
-        name: 'Afternoon Block',
-        emoji: '🔧',
+        name: 'Afternoon Focus',
+        emoji: '',
         type: 'work',
-        start: restEnd,
-        end: bedTime,
+        start: afternoonStart,
+        end: addMins(afternoonStart, 120),
         note: '',
       });
     }
 
+    // Wind down: 2 hours before bed
+    blocks.push({
+      name: 'Wind Down',
+      emoji: '',
+      type: 'rest',
+      start: addMins(bedTime, -120),
+      end: bedTime,
+      note: '',
+    });
+
     // Sleep block (bed → wake, crosses midnight)
     blocks.push({
       name: 'Sleep',
-      emoji: '🌙',
+      emoji: '',
       type: 'rest',
       start: bedTime,
       end: wakeTime,
-      note: 'Rest. You earned it.',
+      note: '',
     });
 
     return blocks;

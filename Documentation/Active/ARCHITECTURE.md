@@ -1,6 +1,6 @@
 # Daily Companion — Architecture
 
-**Status:** v0.4 — Block grading system working (day instances, grade form, sealed records). Template editor now supports drag-to-reorder with auto time recalculation and staged block creation. CI/CD pipeline produces Windows + macOS installers via GitHub Actions (manual trigger). Daily report viewing UI and notifications remain.
+**Status:** v0.5 — Calendar model. Blocks are independent time slots (no contiguous requirement, gaps allowed, overlaps tolerated). Template editor simplified: no time donation, no auto-recalculation. Onboarding generates sparse starter blocks. Emoji field removed from editor and display. Drag-to-reorder improved with glowing drop indicators. Daily report viewing UI and notifications remain.
 
 ---
 
@@ -15,10 +15,11 @@ Built for personal use, but architected so the door stays open for a multi-user 
 ## Core Principles
 
 1. **The day is the atomic unit.** Every feature hangs off a single day's schedule.
-2. **Blocks are immutable once graded.** You can edit a block until you submit a rating. After that, it's history.
-3. **Business logic lives in JS, not Rust.** Tauri's Rust layer is a thin shell for OS integration. All schedule logic, grading, reporting stays in the Svelte frontend. This makes the app portable to web/mobile later.
-4. **One data access layer.** All reads/writes go through a single module. Swap SQLite for a cloud API later without touching UI code.
-5. **The schedule template is separate from the day's instance.** Edit your template in settings. Each day gets a *copy* of the template that becomes its own record.
+2. **Blocks are independent time slots.** Like iOS Calendar — blocks have a start and end time, they can have gaps between them, and overlaps are allowed. No contiguous chain requirement.
+3. **Blocks are immutable once graded.** You can edit a block until you submit a rating. After that, it's history.
+4. **Business logic lives in JS, not Rust.** Tauri's Rust layer is a thin shell for OS integration. All schedule logic, grading, reporting stays in the Svelte frontend. This makes the app portable to web/mobile later.
+5. **One data access layer.** All reads/writes go through a single module. Swap SQLite for a cloud API later without touching UI code.
+6. **The schedule template is separate from the day's instance.** Edit your template in settings. Each day gets a *copy* of the template that becomes its own record.
 
 ---
 
@@ -151,14 +152,14 @@ daily_reports
 ```
 UPCOMING ──(start time arrives)──→ ACTIVE ──(end time arrives)──→ COMPLETED ──(user submits grade)──→ GRADED
    │                                  │                               │
-   │  editable: name, note,           │  editable: name, note,        │  editable: nothing
-   │  type, times                     │  type (not times)             │  (frozen)
+   │  editable: all fields            │  editable: all fields         │  editable: nothing
+   │                                  │                               │  (frozen)
    │                                  │                               │
    └──────────────────────────────────┴───────────────────────────────┘
                               deletable: NO (part of the day record)
 ```
 
-Note: ACTIVE blocks can't have their times edited — the block has already started. But name/note/type can still be adjusted until grading.
+Blocks are fully editable until graded. No constraints on editing times of active blocks — the calendar model treats blocks as independent slots.
 
 ---
 
@@ -179,4 +180,4 @@ v1 is: app runs, shows today's schedule from template, tracks current block, fir
 
 ---
 
-_Last verified against codebase: 2026-04-06 (grading, drag-reorder, CI/CD)_
+_Last verified against codebase: 2026-04-06 (calendar model, grading, CI/CD)_

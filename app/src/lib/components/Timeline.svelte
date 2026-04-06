@@ -5,7 +5,7 @@
 
   let now = $state(new Date());
   let nowMins = $derived(now.getHours() * 60 + now.getMinutes());
-  let currentIdx = $derived(store.blocks.length > 0 ? getCurrentBlockIndex(store.blocks, nowMins) : 0);
+  let currentIdx = $derived(store.blocks.length > 0 ? getCurrentBlockIndex(store.blocks, nowMins) : -1);
 
   $effect(() => {
     const interval = setInterval(() => { now = new Date(); }, 1000);

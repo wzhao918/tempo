@@ -52,7 +52,7 @@ export function getCurrentBlockIndex(blockList, nowMins) {
     if (n < s && e > 24 * 60) n += 24 * 60;
     if (n >= s && n < e) return i;
   }
-  return Math.max(0, blockList.length - 1);
+  return -1; // not inside any block (in a gap)
 }
 
 /** Get the duration of a block in minutes */
