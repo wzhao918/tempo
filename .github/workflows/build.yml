@@ -14,22 +14,53 @@ on:
           - macos
 
 jobs:
-  build:
+  build-windows:
+    if: ${{ github.event.inputs.platform == 'all' || github.event.inputs.platform == 'windows' }}
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+
+      - name: Install dependencies (npm)
+        working-directory: app
+        run: npm install
+
+      - name: Build Tauri app
+        uses: tauri-apps/tauri-action@v0
+        with:
+          projectPath: app
+          args: --target x86_64-pc-windows-msvc
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload installer artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: tempo-windows
+          path: |
+            app/src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/*.exe
+            app/src-tauri/target/x86_64-pc-windows-msvc/release/bundle/msi/*.msi
+          if-no-files-found: ignore
+
+  build-macos:
+    if: ${{ github.event.inputs.platform == 'all' || github.event.inputs.platform == 'macos' }}
     strategy:
       matrix:
         include:
-          - platform: windows-latest
-            target: x86_64-pc-windows-msvc
-            os_name: windows
-          - platform: macos-latest
-            target: aarch64-apple-darwin
-            os_name: macos
-          - platform: macos-latest
-            target: x86_64-apple-darwin
-            os_name: macos
-
-    runs-on: ${{ matrix.platform }}
-    if: ${{ github.event.inputs.platform == 'all' || github.event.inputs.platform == matrix.os_name }}
+          - target: aarch64-apple-darwin
+          - target: x86_64-apple-darwin
+    runs-on: macos-latest
 
     steps:
       - name: Checkout code
@@ -62,8 +93,6 @@ jobs:
         with:
           name: tempo-${{ matrix.target }}
           path: |
-            app/src-tauri/target/${{ matrix.target }}/release/bundle/nsis/*.exe
-            app/src-tauri/target/${{ matrix.target }}/release/bundle/msi/*.msi
             app/src-tauri/target/${{ matrix.target }}/release/bundle/dmg/*.dmg
             app/src-tauri/target/${{ matrix.target }}/release/bundle/macos/*.app
           if-no-files-found: ignore
