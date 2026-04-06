@@ -8,7 +8,7 @@ Ideas that came up during discovery but are out of scope for v1. Preserved here 
 - **Day-by-day custom scheduling** — fully custom schedule per day, not just templates. Requires a calendar/planning UI.
 - **Weekday/weekend templates** — multiple templates, auto-select based on day of week.
 - **Block splitting** — break a block into sub-blocks mid-day (e.g., "Deep Work" → two 75-min focus sessions with a break).
-- **Drag-and-drop block reordering** — visual block rearrangement on the timeline.
+- **Drag-and-drop block reordering** — visual block rearrangement in the template editor. First user-requested feature (mom). Pure frontend — sort_order column already supports it.
 - **Recurring vs. one-off blocks** — some blocks repeat daily, some are one-time (e.g., "dentist appointment").
 
 ## Focus & Productivity
@@ -40,7 +40,7 @@ Ideas that came up during discovery but are out of scope for v1. Preserved here 
 ## UX
 - **Day-off / skip-day mode** — mark a day as skipped, no blocks to grade.
 - **Calendar view for reports** — visual calendar with color-coded days by overall grade.
-- **Onboarding flow** — first-run wizard to set up your first template.
+- ~~**Onboarding flow**~~ — SHIPPED. First-run wizard with wake/bed/meals steps.
 - **Themes** — light mode, custom color schemes.
 - **Sound notifications** — audio cues at transitions (the HTML had this as "coming soon").
 

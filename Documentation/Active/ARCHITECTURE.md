@@ -1,6 +1,6 @@
 # Daily Companion — Architecture
 
-**Status:** v0.3 — Core infrastructure complete. SQLite, reactive store, template editor, and onboarding flow are all built and functional. Grading, daily reports, and notifications remain.
+**Status:** v0.4 — Block grading system working (day instances, grade form, sealed records). Template editor now supports drag-to-reorder with auto time recalculation and staged block creation. CI/CD pipeline produces Windows + macOS installers via GitHub Actions (manual trigger). Daily report viewing UI and notifications remain.
 
 ---
 
@@ -179,4 +179,4 @@ v1 is: app runs, shows today's schedule from template, tracks current block, fir
 
 ---
 
-_Last verified against codebase: 2026-04-04 (documentation alignment session)_
+_Last verified against codebase: 2026-04-06 (grading, drag-reorder, CI/CD)_
