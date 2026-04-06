@@ -5,12 +5,12 @@
 
   // Block type options
   const BLOCK_TYPES = [
-    { value: 'work',     label: 'Work / Focus',  emoji: '\u26A1' },
-    { value: 'exercise', label: 'Active',         emoji: '\uD83D\uDEB4' },
-    { value: 'rest',     label: 'Rest',           emoji: '\uD83C\uDF19' },
-    { value: 'open',     label: 'Open',           emoji: '\uD83C\uDF05' },
-    { value: 'admin',    label: 'Admin',          emoji: '\uD83D\uDCCB' },
-    { value: 'novel',    label: 'Creative',       emoji: '\u270D\uFE0F' },
+    { value: 'work',     label: 'Work / Focus',  emoji: '⚡' },
+    { value: 'exercise', label: 'Active',         emoji: '🚴' },
+    { value: 'rest',     label: 'Rest',           emoji: '🌙' },
+    { value: 'open',     label: 'Open',           emoji: '🌅' },
+    { value: 'admin',    label: 'Admin',          emoji: '📋' },
+    { value: 'novel',    label: 'Creative',       emoji: '✍️' },
   ];
 
   // ─── Local editing state ─────────────────────────────────────
@@ -216,12 +216,12 @@
             onmousedown={(e) => onDragStart(e, i)}
             title="Drag to reorder"
           >
-            <span class="drag-dots">\u2837</span>
+            <span class="drag-dots">⠿</span>
             <span class="block-row-number">{i + 1}</span>
           </div>
 
           <div class="block-time-badge">
-            {block.start} \u2013 {block.end}
+            {block.start} – {block.end}
             <span class="block-duration-badge">{formatDuration(getMinutesBetween(block.start, block.end))}</span>
           </div>
 
