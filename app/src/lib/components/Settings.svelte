@@ -1,42 +1,20 @@
 <script>
-  import { store, saveBlock, addBlock, removeBlock, resetToOnboarding } from '$lib/scheduleStore.svelte.js';
+  import { store, loadTemplateBlocks, saveTemplateEdits, resetToOnboarding } from '$lib/scheduleStore.svelte.js';
   import TemplateEditor from './TemplateEditor.svelte';
 
   let showResetConfirm = $state(false);
+
+  // Load template blocks when Settings mounts
+  $effect(() => {
+    loadTemplateBlocks();
+  });
 
   async function handleReset() {
     await resetToOnboarding();
   }
 
   async function handleSave(editedBlocks, removedIds) {
-    // Remove deleted blocks
-    for (const id of removedIds) {
-      await removeBlock(id);
-    }
-
-    // Update existing blocks and add new ones
-    for (let i = 0; i < editedBlocks.length; i++) {
-      const block = editedBlocks[i];
-      if (block.isNew) {
-        await addBlock({
-          name: block.name,
-          emoji: block.emoji,
-          type: block.type,
-          start: block.start,
-          end: block.end,
-          note: block.note,
-        });
-      } else if (block.id) {
-        await saveBlock(block.id, {
-          name: block.name,
-          emoji: block.emoji,
-          type: block.type,
-          start: block.start,
-          end: block.end,
-          note: block.note,
-        });
-      }
-    }
+    await saveTemplateEdits(editedBlocks, removedIds);
   }
 </script>
 
@@ -48,7 +26,7 @@
 
   <div class="settings-section">
     <div class="section-label">Schedule Template</div>
-    <TemplateEditor initialBlocks={store.blocks} onSave={handleSave} />
+    <TemplateEditor initialBlocks={store.templateBlocks} onSave={handleSave} />
   </div>
 
   <div class="settings-section">

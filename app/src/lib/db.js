@@ -190,6 +190,16 @@ export async function removeBlock(blockId) {
   await db.execute('DELETE FROM template_blocks WHERE id = $1', [blockId]);
 }
 
+/** Update sort_order for template blocks based on array position */
+export async function updateSortOrders(blockIds) {
+  for (let i = 0; i < blockIds.length; i++) {
+    await db.execute(
+      'UPDATE template_blocks SET sort_order = $1 WHERE id = $2',
+      [i, blockIds[i]]
+    );
+  }
+}
+
 export async function addBlocksToTemplate(templateId, blocks) {
   for (let i = 0; i < blocks.length; i++) {
     const b = blocks[i];

@@ -28,10 +28,15 @@
   let showNewBlockForm = $state(false);
   let newBlock = $state({ name: '', type: 'work', startTime: '09:00', duration: 60, note: '' });
 
-  // Initialize editing state from props
+  // Initialize editing state from props (re-sync when initialBlocks changes)
+  let lastInitKey = $state('');
   $effect(() => {
-    if (initialBlocks.length > 0 && editingBlocks.length === 0) {
+    const key = initialBlocks.map(b => b.id || b.name).join(',');
+    if (initialBlocks.length > 0 && key !== lastInitKey) {
+      lastInitKey = key;
       editingBlocks = initialBlocks.map(b => ({ ...b, isNew: false }));
+      hasChanges = false;
+      removedIds = [];
     }
   });
 

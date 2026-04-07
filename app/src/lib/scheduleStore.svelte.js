@@ -5,6 +5,7 @@
 import {
   getActiveTemplate, getTemplateBlocks, hasAnyTemplates,
   updateBlock as dbUpdateBlock, addBlock as dbAddBlock, removeBlock as dbRemoveBlock,
+  updateSortOrders,
   getTodayDate, getDay, createDayFromTemplate, getDayBlocks, gradeBlock as dbGradeBlock,
   finalizePreviousDay, clearAllData,
 } from './db.js';
@@ -12,6 +13,7 @@ import {
 // ─── Reactive State ────────────────────────────────────────────
 export const store = $state({
   blocks: [],            // today's day_blocks (with grade fields)
+  templateBlocks: [],    // template_blocks for settings editor
   activeTemplateId: null,
   todayDayId: null,      // the day record ID for today
   todayDate: null,       // "YYYY-MM-DD"
@@ -75,21 +77,52 @@ export async function gradeBlock(blockId, grade, gradeNote) {
 
 // ─── Template Editing Actions (Settings screen) ────────────────
 
-export async function saveBlock(blockId, fields) {
-  await dbUpdateBlock(blockId, fields);
-  if (store.activeTemplateId) {
-    // Reload template blocks for settings view
-    // (day blocks are separate — template edits don't affect today)
-  }
-}
-
-export async function addBlock(block) {
+/** Load template blocks into store for the settings editor */
+export async function loadTemplateBlocks() {
   if (!store.activeTemplateId) return;
-  await dbAddBlock(store.activeTemplateId, block);
+  store.templateBlocks = await getTemplateBlocks(store.activeTemplateId);
 }
 
-export async function removeBlock(blockId) {
-  await dbRemoveBlock(blockId);
+/** Save all template edits: removals, updates, inserts, and sort order */
+export async function saveTemplateEdits(editedBlocks, removedIds) {
+  if (!store.activeTemplateId) return;
+
+  // Remove deleted blocks
+  for (const id of removedIds) {
+    await dbRemoveBlock(id);
+  }
+
+  // Update existing and add new blocks
+  for (let i = 0; i < editedBlocks.length; i++) {
+    const block = editedBlocks[i];
+    if (block.isNew) {
+      const newId = await dbAddBlock(store.activeTemplateId, {
+        name: block.name,
+        emoji: block.emoji || '',
+        type: block.type,
+        start: block.start,
+        end: block.end,
+        note: block.note,
+      });
+      editedBlocks[i] = { ...block, id: newId, isNew: false };
+    } else if (block.id) {
+      await dbUpdateBlock(block.id, {
+        name: block.name,
+        emoji: block.emoji || '',
+        type: block.type,
+        start: block.start,
+        end: block.end,
+        note: block.note,
+      });
+    }
+  }
+
+  // Update sort_order for all blocks based on their array position
+  const ids = editedBlocks.map(b => b.id).filter(Boolean);
+  await updateSortOrders(ids);
+
+  // Reload template blocks from DB so store is in sync
+  store.templateBlocks = await getTemplateBlocks(store.activeTemplateId);
 }
 
 export async function completeOnboarding(templateId) {
@@ -103,6 +136,7 @@ export async function completeOnboarding(templateId) {
 export async function resetToOnboarding() {
   await clearAllData();
   store.blocks = [];
+  store.templateBlocks = [];
   store.activeTemplateId = null;
   store.todayDayId = null;
   store.todayDate = null;

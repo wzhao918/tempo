@@ -8,6 +8,7 @@
   import Sidebar from '$lib/components/Sidebar.svelte';
   import Settings from '$lib/components/Settings.svelte';
   import Onboarding from '$lib/components/Onboarding.svelte';
+  import SkyGradient from '$lib/components/SkyGradient.svelte';
 
   let currentView = $state('dashboard');
   let loadError = $state('');
@@ -39,10 +40,12 @@
   <Onboarding />
 
 {:else if currentView === 'settings'}
+  <SkyGradient />
   <Header {currentView} onNavigate={(v) => currentView = v} />
   <Settings />
 
 {:else}
+  <SkyGradient />
   <Header {currentView} onNavigate={(v) => currentView = v} />
   <Hero />
   <div class="main">
