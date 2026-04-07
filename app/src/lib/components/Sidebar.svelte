@@ -1,25 +1,30 @@
 <script>
   import { store } from '$lib/scheduleStore.svelte.js';
-  import { getCurrentBlockIndex, getNowMinutes, getMinutesLeft, timeToMinutes } from '$lib/schedule.js';
+  import { getCurrentBlockIndex, getNextBlockIndex, getNowMinutes, getMinutesLeft, timeToMinutes } from '$lib/schedule.js';
 
   let now = $state(new Date());
   let nowMins = $derived(now.getHours() * 60 + now.getMinutes());
-  let currentIdx = $derived(store.blocks.length > 0 ? getCurrentBlockIndex(store.blocks, nowMins) : 0);
-  let current = $derived(store.blocks[currentIdx]);
+  let currentIdx = $derived(store.blocks.length > 0 ? getCurrentBlockIndex(store.blocks, nowMins) : -1);
+  let current = $derived(currentIdx >= 0 ? store.blocks[currentIdx] : null);
 
   let blocksLeft = $derived.by(() => {
     if (store.blocks.length === 0) return 0;
+    // Count remaining non-rest blocks from the current or next block onward
+    const startFrom = currentIdx >= 0 ? currentIdx : getNextBlockIndex(store.blocks, nowMins);
+    if (startFrom < 0) return 0;
     let count = 0;
-    for (let i = currentIdx; i < store.blocks.length - 1; i++) {
+    for (let i = startFrom; i < store.blocks.length - 1; i++) {
       if (store.blocks[i].type !== 'rest') count++;
     }
     return Math.max(0, count);
   });
 
   let hoursLeft = $derived.by(() => {
-    if (store.blocks.length === 0 || !current) return '0.0';
+    if (store.blocks.length === 0) return '0.0';
+    const startFrom = currentIdx >= 0 ? currentIdx : getNextBlockIndex(store.blocks, nowMins);
+    if (startFrom < 0) return '0.0';
     let total = 0;
-    for (let i = currentIdx; i < store.blocks.length - 1; i++) {
+    for (let i = startFrom; i < store.blocks.length - 1; i++) {
       const b = store.blocks[i];
       if (b.type !== 'rest') {
         const s = timeToMinutes(b.start);
@@ -28,15 +33,18 @@
         total += (e - s) / 60;
       }
     }
-    const minsLeft = getMinutesLeft(current, nowMins);
-    const blockDuration = (() => {
-      const s = timeToMinutes(current.start);
-      let e = timeToMinutes(current.end);
-      if (e <= s) e += 24 * 60;
-      return e - s;
-    })();
-    const elapsed = blockDuration - minsLeft;
-    total -= elapsed / 60;
+    // Subtract elapsed time in current block if we're in one
+    if (current) {
+      const minsLeft = getMinutesLeft(current, nowMins);
+      const blockDuration = (() => {
+        const s = timeToMinutes(current.start);
+        let e = timeToMinutes(current.end);
+        if (e <= s) e += 24 * 60;
+        return e - s;
+      })();
+      const elapsed = blockDuration - minsLeft;
+      total -= elapsed / 60;
+    }
     return Math.max(0, total).toFixed(1);
   });
 

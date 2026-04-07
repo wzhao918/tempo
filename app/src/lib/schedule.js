@@ -55,6 +55,15 @@ export function getCurrentBlockIndex(blockList, nowMins) {
   return -1; // not inside any block (in a gap)
 }
 
+/** Find the index of the next upcoming block (useful when in a gap) */
+export function getNextBlockIndex(blockList, nowMins) {
+  for (let i = 0; i < blockList.length; i++) {
+    const s = timeToMinutes(blockList[i].start);
+    if (s > nowMins) return i;
+  }
+  return -1; // no upcoming blocks
+}
+
 /** Get the duration of a block in minutes */
 export function getBlockDuration(block) {
   const s = timeToMinutes(block.start);

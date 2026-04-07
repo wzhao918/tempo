@@ -1,6 +1,6 @@
 <script>
   import { store } from '$lib/scheduleStore.svelte.js';
-  import { getCurrentBlockIndex, getBlockColor, getBlockHex, getMinutesLeft, formatCountdown } from '$lib/schedule.js';
+  import { getCurrentBlockIndex, getNextBlockIndex, getBlockColor, getBlockHex, getMinutesLeft, formatCountdown, timeToMinutes } from '$lib/schedule.js';
 
   let now = $state(new Date());
   let nowMins = $derived(now.getHours() * 60 + now.getMinutes());
@@ -9,15 +9,30 @@
   let minutes = $derived(String(now.getMinutes()).padStart(2, '0'));
   let seconds = $derived(String(now.getSeconds()).padStart(2, '0'));
 
-  let currentIdx = $derived(store.blocks.length > 0 ? getCurrentBlockIndex(store.blocks, nowMins) : 0);
-  let current = $derived(store.blocks[currentIdx]);
+  let currentIdx = $derived(store.blocks.length > 0 ? getCurrentBlockIndex(store.blocks, nowMins) : -1);
+  let current = $derived(currentIdx >= 0 ? store.blocks[currentIdx] : null);
   let color = $derived(current ? getBlockColor(current.type) : 'work');
   let hex = $derived(current ? getBlockHex(current.type) : '#e8a844');
 
-  let nextIdx = $derived(store.blocks.length > 0 ? (currentIdx + 1) % store.blocks.length : 0);
-  let next = $derived(store.blocks[nextIdx]);
+  // Find the next block — either the one after current, or the next upcoming if in a gap
+  let nextIdx = $derived.by(() => {
+    if (store.blocks.length === 0) return -1;
+    if (currentIdx >= 0) {
+      const n = currentIdx + 1;
+      return n < store.blocks.length ? n : -1;
+    }
+    return getNextBlockIndex(store.blocks, nowMins);
+  });
+  let next = $derived(nextIdx >= 0 ? store.blocks[nextIdx] : null);
   let minsLeft = $derived(current ? getMinutesLeft(current, nowMins) : 0);
-  let isUrgent = $derived(minsLeft <= 5);
+  let minsToNext = $derived.by(() => {
+    if (!next) return 0;
+    const nextStart = timeToMinutes(next.start);
+    let diff = nextStart - nowMins;
+    if (diff < 0) diff += 24 * 60;
+    return diff;
+  });
+  let isUrgent = $derived(current ? minsLeft <= 5 : minsToNext <= 5);
 
   $effect(() => {
     const interval = setInterval(() => { now = new Date(); }, 1000);
@@ -25,23 +40,37 @@
   });
 </script>
 
-{#if current}
+{#if store.blocks.length > 0}
 <div class="hero">
   <div class="clock-row">
     <div class="clock">
       <span>{hours}:{minutes}</span><span class="seconds">:{seconds}</span>
     </div>
-    <div class="current-block-pill bg-{color}">
-      <div class="block-dot" style="background: {hex}"></div>
-      <span>{current.name}</span>
-    </div>
+    {#if current}
+      <div class="current-block-pill bg-{color}">
+        <div class="block-dot" style="background: {hex}"></div>
+        <span>{current.name}</span>
+      </div>
+    {:else}
+      <div class="current-block-pill gap-pill">
+        <span>Free time</span>
+      </div>
+    {/if}
   </div>
 
-  <div class="next-row">
-    <span class="next-label">Next</span>
-    <span class="next-block">{next?.emoji} {next?.name}</span>
-    <span class="countdown" class:urgent={isUrgent}>in {formatCountdown(minsLeft)}</span>
-  </div>
+  {#if current && next}
+    <div class="next-row">
+      <span class="next-label">Next</span>
+      <span class="next-block">{next.name}</span>
+      <span class="countdown" class:urgent={isUrgent}>in {formatCountdown(minsLeft)}</span>
+    </div>
+  {:else if !current && next}
+    <div class="next-row">
+      <span class="next-label">Next</span>
+      <span class="next-block">{next.name}</span>
+      <span class="countdown" class:urgent={isUrgent}>in {formatCountdown(minsToNext)}</span>
+    </div>
+  {/if}
 </div>
 {/if}
 
@@ -82,6 +111,12 @@
     font-size: 15px;
     font-weight: 500;
     letter-spacing: 0.02em;
+  }
+
+  .gap-pill {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text-dim);
   }
 
   .block-dot {
