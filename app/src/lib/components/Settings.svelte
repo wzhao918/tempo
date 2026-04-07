@@ -3,10 +3,13 @@
   import TemplateEditor from './TemplateEditor.svelte';
 
   let showResetConfirm = $state(false);
+  let showSaveToast = $state(false);
+  let toastTimeout = null;
 
   // Load template blocks when Settings mounts
   $effect(() => {
     loadTemplateBlocks();
+    return () => { if (toastTimeout) clearTimeout(toastTimeout); };
   });
 
   async function handleReset() {
@@ -15,6 +18,9 @@
 
   async function handleSave(editedBlocks, removedIds) {
     await saveTemplateEdits(editedBlocks, removedIds);
+    showSaveToast = true;
+    if (toastTimeout) clearTimeout(toastTimeout);
+    toastTimeout = setTimeout(() => { showSaveToast = false; }, 3000);
   }
 </script>
 
@@ -28,6 +34,12 @@
     <div class="section-label">Schedule Template</div>
     <TemplateEditor initialBlocks={store.templateBlocks} onSave={handleSave} />
   </div>
+
+  {#if showSaveToast}
+    <div class="save-toast">
+      Template saved. Changes will appear in tomorrow's schedule.
+    </div>
+  {/if}
 
   <div class="settings-section">
     <div class="section-label">Danger Zone</div>
@@ -135,5 +147,22 @@
 
   .reset-confirm-btn:hover {
     filter: brightness(1.1);
+  }
+
+  .save-toast {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: var(--green);
+    background: var(--green-dim);
+    border: 1px solid rgba(92, 184, 122, 0.3);
+    border-radius: 8px;
+    padding: 10px 16px;
+    margin-bottom: 20px;
+    animation: toast-in 0.3s ease-out;
+  }
+
+  @keyframes toast-in {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
   }
 </style>
