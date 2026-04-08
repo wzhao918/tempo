@@ -1,6 +1,6 @@
 # Daily Companion — Architecture
 
-**Status:** v0.6 — Sidebar rebuilt with day overview color bars (today vs tomorrow), quests module (tomorrow's task list with checkboxes), and stats. Template editor uses collapsed-by-default accordion cards. Hover highlighting on all cards. Time-of-day sky gradient. Settings persistence fixed. Daily report viewing UI and notifications remain.
+**Status:** v0.7 — Today and Tomorrow are now separate modals triggered from clickable sidebar color bars. Today modal edits day_blocks with graded-block locking. Tomorrow modal edits template_blocks with quests panel. Settings is app preferences only (notification toggles, danger zone). TemplateEditor supports locked (graded) blocks. Daily report viewing UI remains.
 
 ---
 
@@ -19,7 +19,7 @@ Built for personal use, but architected so the door stays open for a multi-user 
 3. **Blocks are immutable once graded.** You can edit a block until you submit a rating. After that, it's history.
 4. **Business logic lives in JS, not Rust.** Tauri's Rust layer is a thin shell for OS integration. All schedule logic, grading, reporting stays in the Svelte frontend. This makes the app portable to web/mobile later.
 5. **One data access layer.** All reads/writes go through a single module. Swap SQLite for a cloud API later without touching UI code.
-6. **The schedule template is separate from the day's instance.** Edit your template in settings. Each day gets a *copy* of the template that becomes its own record.
+6. **The schedule template is separate from the day's instance.** Edit your template via the Tomorrow modal. Each day gets a *copy* of the template that becomes its own record. Today's instance is editable via the Today modal (ungraded blocks only).
 
 ---
 
@@ -146,11 +146,13 @@ quests
 
 ---
 
-## Views (Tabs)
+## Views & Modals
 
-1. **Dashboard** — The main view. Clock, current block, timeline, stats sidebar, grading prompt.
-2. **Reports** — Scrollable list of daily reports, most recent first.
-3. **Settings** — Schedule template editor, notification preferences, app preferences.
+1. **Dashboard** — The main view. Clock, current block, timeline, sidebar (day overview bars + stats), grading prompt.
+2. **Today Modal** — Triggered by clicking the Today color bar. Edits today's day_blocks. Graded blocks appear as locked rows. Ungraded blocks are fully editable.
+3. **Tomorrow Modal** — Triggered by clicking the Tomorrow color bar. Edits template_blocks (tomorrow's schedule). Includes quests panel.
+4. **Reports** — Scrollable list of daily reports, most recent first. (UI not yet built.)
+5. **Settings** — App preferences: notification toggles, danger zone (reset/re-onboard). No schedule editing.
 
 ---
 
@@ -187,4 +189,4 @@ v1 is: app runs, shows today's schedule from template, tracks current block, fir
 
 ---
 
-_Last verified against codebase: 2026-04-06 (calendar model, grading, CI/CD)_
+_Last verified against codebase: 2026-04-08 (today/tomorrow modal separation, graded block locking, settings slim-down)_
