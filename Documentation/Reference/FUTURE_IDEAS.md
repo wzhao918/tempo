@@ -5,6 +5,7 @@ Ideas that came up during discovery but are out of scope for v1. Preserved here 
 ---
 
 ## Schedule & Blocks
+- **Separate "Build Tomorrow" from Settings** — the template editor currently lives in Settings, but "building tomorrow's schedule" is a first-class daily ritual, not a settings change. The day overview color bars made this click: you do your schedule today, build tomorrow's, then tomorrow comes around and you do it again. Options: dedicated "Tomorrow" screen, inline editing on the dashboard, or a standalone planning view. The key insight is that schedule-building is a *workflow*, not a *configuration*. (Parked 2026-04-08)
 - **Day-by-day custom scheduling** — fully custom schedule per day, not just templates. Requires a calendar/planning UI.
 - **Weekday/weekend templates** — multiple templates, auto-select based on day of week.
 - **Block splitting** — break a block into sub-blocks mid-day (e.g., "Deep Work" → two 75-min focus sessions with a break).
@@ -46,6 +47,7 @@ Ideas that came up during discovery but are out of scope for v1. Preserved here 
 
 - **Color schemes** - user selects from templates
 - **Animations** - e.g. mouse hover animations, grading and completion animations (little "dopamine hits"), etc.
+- **Drag UX in accordion cards** — the settings accordion (collapsed-by-default) lost the drag handle visual accents (hover border, amber glow on active) that existed in the old always-expanded layout. Worth restoring when the template editor gets its next pass. (Noted 2026-04-08)
 
 ---
 
