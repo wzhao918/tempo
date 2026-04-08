@@ -55,7 +55,6 @@ async function runMigrations() {
       id          INTEGER PRIMARY KEY AUTOINCREMENT,
       date        TEXT UNIQUE NOT NULL,
       template_id INTEGER REFERENCES schedule_templates(id),
-      skipped     INTEGER DEFAULT 0,
       created_at  TEXT DEFAULT (datetime('now'))
     )
   `);
@@ -107,10 +106,6 @@ async function seedDefaultTemplate() {
 export async function hasAnyTemplates() {
   const result = await db.select('SELECT COUNT(*) as count FROM schedule_templates');
   return result[0].count > 0;
-}
-
-export async function getTemplates() {
-  return await db.select('SELECT id, name FROM schedule_templates ORDER BY id');
 }
 
 export async function getActiveTemplate() {
@@ -350,20 +345,6 @@ export async function generateDailyReport(dayId) {
     [dayId, summary]
   );
   return result.lastInsertId;
-}
-
-/** Get all daily reports, most recent first */
-export async function getDailyReports() {
-  const rows = await db.select(`
-    SELECT dr.id, dr.day_id, dr.generated_at, dr.summary, d.date
-    FROM daily_reports dr
-    JOIN days d ON d.id = dr.day_id
-    ORDER BY d.date DESC
-  `);
-  return rows.map(r => ({
-    ...r,
-    summary: JSON.parse(r.summary || '{}'),
-  }));
 }
 
 /** Finalize a previous day: generate its report if it has any grades */

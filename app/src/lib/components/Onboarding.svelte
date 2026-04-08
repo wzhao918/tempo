@@ -1,6 +1,7 @@
 <script>
   import { completeOnboarding } from '$lib/scheduleStore.svelte.js';
   import { createTemplate, addBlocksToTemplate } from '$lib/db.js';
+  import { addMinutes } from '$lib/schedule.js';
   import TemplateEditor from './TemplateEditor.svelte';
 
   let step = $state(1);
@@ -14,12 +15,6 @@
   let generatedBlocks = $state([]);
   let editorRef = $state(null);
 
-  function addMins(timeStr, mins) {
-    const [h, m] = timeStr.split(':').map(Number);
-    const total = (h * 60 + m + mins) % (24 * 60);
-    return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
-  }
-
   function generateBlocks() {
     const blocks = [];
 
@@ -29,7 +24,7 @@
       emoji: '',
       type: 'work',
       start: wakeTime,
-      end: addMins(wakeTime, 120),
+      end: addMinutes(wakeTime, 120),
       note: '',
     });
 
@@ -40,18 +35,18 @@
         emoji: '',
         type: 'open',
         start: lunchTime,
-        end: addMins(lunchTime, 60),
+        end: addMinutes(lunchTime, 60),
         note: '',
       });
 
       // Afternoon focus: starts 1hr after lunch, 2 hours
-      const afternoonStart = addMins(lunchTime, 120);
+      const afternoonStart = addMinutes(lunchTime, 120);
       blocks.push({
         name: 'Afternoon Focus',
         emoji: '',
         type: 'work',
         start: afternoonStart,
-        end: addMins(afternoonStart, 120),
+        end: addMinutes(afternoonStart, 120),
         note: '',
       });
 
@@ -61,7 +56,7 @@
         emoji: '',
         type: 'open',
         start: dinnerTime,
-        end: addMins(dinnerTime, 60),
+        end: addMinutes(dinnerTime, 60),
         note: '',
       });
     } else {
@@ -73,7 +68,7 @@
         emoji: '',
         type: 'work',
         start: afternoonStart,
-        end: addMins(afternoonStart, 120),
+        end: addMinutes(afternoonStart, 120),
         note: '',
       });
     }
@@ -83,7 +78,7 @@
       name: 'Wind Down',
       emoji: '',
       type: 'rest',
-      start: addMins(bedTime, -120),
+      start: addMinutes(bedTime, -120),
       end: bedTime,
       note: '',
     });

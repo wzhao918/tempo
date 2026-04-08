@@ -1,6 +1,6 @@
 <script>
   import { store } from '$lib/scheduleStore.svelte.js';
-  import { getCurrentBlockIndex, getNowMinutes } from '$lib/schedule.js';
+  import { getCurrentBlockIndex } from '$lib/schedule.js';
   import BlockCard from './BlockCard.svelte';
 
   let now = $state(new Date());

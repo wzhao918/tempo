@@ -7,6 +7,17 @@ export function timeToMinutes(t) {
   return h * 60 + m;
 }
 
+/** Convert minutes since midnight to "HH:MM" string */
+export function minutesToTime(mins) {
+  const total = ((mins % (24 * 60)) + 24 * 60) % (24 * 60);
+  return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
+}
+
+/** Add minutes to a "HH:MM" time string, returns "HH:MM" */
+export function addMinutes(timeStr, mins) {
+  return minutesToTime(timeToMinutes(timeStr) + mins);
+}
+
 /** Convert minutes since midnight to display string like "9:00am" */
 export function minutesToDisplay(mins) {
   const h = Math.floor(mins / 60) % 24;
@@ -33,12 +44,6 @@ export function formatCountdown(mins) {
   const h = Math.floor(mins / 60);
   const m = mins % 60;
   return m > 0 ? `${h}h ${m}m` : `${h}h`;
-}
-
-/** Get current time as minutes since midnight */
-export function getNowMinutes() {
-  const now = new Date();
-  return now.getHours() * 60 + now.getMinutes();
 }
 
 /** Find the index of the currently active block */

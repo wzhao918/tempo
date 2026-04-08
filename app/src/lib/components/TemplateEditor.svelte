@@ -1,5 +1,5 @@
 <script>
-  import { getBlockColor, getBlockHex } from '$lib/schedule.js';
+  import { getBlockColor, getBlockHex, getBlockDuration, formatDuration, addMinutes } from '$lib/schedule.js';
 
   let { initialBlocks = [], onSave = async () => {}, saveLabel = 'Save Changes' } = $props();
 
@@ -44,30 +44,6 @@
   export function setBlocks(newBlocks) {
     editingBlocks = newBlocks.map(b => ({ ...b, isNew: !b.id }));
     hasChanges = true;
-  }
-
-  // ─── Time helpers ────────────────────────────────────────────
-  function addMinutes(timeStr, mins) {
-    const [h, m] = timeStr.split(':').map(Number);
-    const total = (h * 60 + m + mins) % (24 * 60);
-    return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
-  }
-
-  function getMinutesBetween(start, end) {
-    const [sh, sm] = start.split(':').map(Number);
-    const [eh, em] = end.split(':').map(Number);
-    let startMins = sh * 60 + sm;
-    let endMins = eh * 60 + em;
-    if (endMins <= startMins) endMins += 24 * 60; // crosses midnight
-    return endMins - startMins;
-  }
-
-  function formatDuration(mins) {
-    const h = Math.floor(mins / 60);
-    const m = mins % 60;
-    if (h === 0) return `${m}m`;
-    if (m === 0) return `${h}h`;
-    return `${h}h ${m}m`;
   }
 
   // ─── Field editing ───────────────────────────────────────────
@@ -227,7 +203,7 @@
 
           <div class="block-time-badge">
             {block.start} – {block.end}
-            <span class="block-duration-badge">{formatDuration(getMinutesBetween(block.start, block.end))}</span>
+            <span class="block-duration-badge">{formatDuration(getBlockDuration(block))}</span>
           </div>
 
           <button class="remove-btn" onclick={() => removeBlockAt(i)} title="Remove block">x</button>

@@ -1,58 +1,49 @@
 <script>
   import { store } from '$lib/scheduleStore.svelte.js';
-  import { getCurrentBlockIndex, getNextBlockIndex, getNowMinutes, getMinutesLeft, timeToMinutes } from '$lib/schedule.js';
+  import { getCurrentBlockIndex, getNextBlockIndex, getBlockDuration, getMinutesLeft, timeToMinutes } from '$lib/schedule.js';
 
   let now = $state(new Date());
   let nowMins = $derived(now.getHours() * 60 + now.getMinutes());
   let currentIdx = $derived(store.blocks.length > 0 ? getCurrentBlockIndex(store.blocks, nowMins) : -1);
   let current = $derived(currentIdx >= 0 ? store.blocks[currentIdx] : null);
 
+  // Non-rest blocks that haven't ended yet
   let blocksLeft = $derived.by(() => {
     if (store.blocks.length === 0) return 0;
-    // Count remaining non-rest blocks from the current or next block onward
     const startFrom = currentIdx >= 0 ? currentIdx : getNextBlockIndex(store.blocks, nowMins);
     if (startFrom < 0) return 0;
     let count = 0;
-    for (let i = startFrom; i < store.blocks.length - 1; i++) {
+    for (let i = startFrom; i < store.blocks.length; i++) {
       if (store.blocks[i].type !== 'rest') count++;
     }
-    return Math.max(0, count);
+    return count;
   });
 
+  // Non-rest hours remaining (subtracts elapsed time in current block)
   let hoursLeft = $derived.by(() => {
     if (store.blocks.length === 0) return '0.0';
     const startFrom = currentIdx >= 0 ? currentIdx : getNextBlockIndex(store.blocks, nowMins);
     if (startFrom < 0) return '0.0';
     let total = 0;
-    for (let i = startFrom; i < store.blocks.length - 1; i++) {
-      const b = store.blocks[i];
-      if (b.type !== 'rest') {
-        const s = timeToMinutes(b.start);
-        let e = timeToMinutes(b.end);
-        if (e <= s) e += 24 * 60;
-        total += (e - s) / 60;
+    for (let i = startFrom; i < store.blocks.length; i++) {
+      if (store.blocks[i].type !== 'rest') {
+        total += getBlockDuration(store.blocks[i]) / 60;
       }
     }
-    // Subtract elapsed time in current block if we're in one
-    if (current) {
-      const minsLeft = getMinutesLeft(current, nowMins);
-      const blockDuration = (() => {
-        const s = timeToMinutes(current.start);
-        let e = timeToMinutes(current.end);
-        if (e <= s) e += 24 * 60;
-        return e - s;
-      })();
-      const elapsed = blockDuration - minsLeft;
+    if (current && current.type !== 'rest') {
+      const elapsed = getBlockDuration(current) - getMinutesLeft(current, nowMins);
       total -= elapsed / 60;
     }
     return Math.max(0, total).toFixed(1);
   });
 
+  // Progress through the day based on first block start to last block end
   let dayProgress = $derived.by(() => {
     if (store.blocks.length === 0) return 0;
     const dayStart = timeToMinutes(store.blocks[0].start);
     const lastBlock = store.blocks[store.blocks.length - 1];
-    const dayEnd = timeToMinutes(lastBlock.start);
+    let dayEnd = timeToMinutes(lastBlock.end);
+    if (dayEnd <= dayStart) dayEnd += 24 * 60;
     const dayTotal = dayEnd - dayStart;
     if (dayTotal <= 0) return 0;
     const elapsed = nowMins - dayStart;
@@ -62,12 +53,7 @@
   let deepWorkHours = $derived.by(() => {
     let total = 0;
     for (const b of store.blocks) {
-      if (b.type === 'work') {
-        const s = timeToMinutes(b.start);
-        let e = timeToMinutes(b.end);
-        if (e <= s) e += 24 * 60;
-        total += (e - s) / 60;
-      }
+      if (b.type === 'work') total += getBlockDuration(b) / 60;
     }
     return total.toFixed(1);
   });
