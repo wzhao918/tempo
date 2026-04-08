@@ -6,6 +6,8 @@ import {
   getActiveTemplate, getTemplateBlocks, hasAnyTemplates,
   updateBlock as dbUpdateBlock, addBlock as dbAddBlock, removeBlock as dbRemoveBlock,
   updateSortOrders,
+  updateDayBlock as dbUpdateDayBlock, addDayBlock as dbAddDayBlock,
+  removeDayBlock as dbRemoveDayBlock, updateDayBlockSortOrders,
   getTodayDate, getDay, createDayFromTemplate, getDayBlocks, gradeBlock as dbGradeBlock,
   finalizePreviousDay, clearAllData,
   getQuests, addQuest as dbAddQuest, toggleQuest as dbToggleQuest,
@@ -87,6 +89,51 @@ export async function gradeBlock(blockId, grade, gradeNote) {
   if (store.todayDayId) {
     store.blocks = await getDayBlocks(store.todayDayId);
   }
+}
+
+// ─── Day Block Editing Actions (Today modal) ─────────────────
+
+/** Save edits to today's day_blocks: removals, updates, inserts, reorder */
+export async function saveDayEdits(editedBlocks, removedIds) {
+  if (!store.todayDayId) return;
+
+  // Remove deleted blocks (only ungraded ones will actually delete)
+  for (const id of removedIds) {
+    await dbRemoveDayBlock(id);
+  }
+
+  // Update existing and add new blocks
+  for (let i = 0; i < editedBlocks.length; i++) {
+    const block = editedBlocks[i];
+    if (block.isNew) {
+      const newId = await dbAddDayBlock(store.todayDayId, {
+        name: block.name,
+        emoji: block.emoji || '',
+        type: block.type,
+        start: block.start,
+        end: block.end,
+        note: block.note,
+      });
+      editedBlocks[i] = { ...block, id: newId, isNew: false };
+    } else if (block.id && !block.grade) {
+      // Only update ungraded blocks
+      await dbUpdateDayBlock(block.id, {
+        name: block.name,
+        emoji: block.emoji || '',
+        type: block.type,
+        start: block.start,
+        end: block.end,
+        note: block.note,
+      });
+    }
+  }
+
+  // Update sort_order for all blocks
+  const ids = editedBlocks.map(b => b.id).filter(Boolean);
+  await updateDayBlockSortOrders(ids);
+
+  // Reload day blocks from DB
+  store.blocks = await getDayBlocks(store.todayDayId);
 }
 
 // ─── Template Editing Actions (Settings screen) ────────────────

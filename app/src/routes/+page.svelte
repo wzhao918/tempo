@@ -9,9 +9,11 @@
   import Settings from '$lib/components/Settings.svelte';
   import Onboarding from '$lib/components/Onboarding.svelte';
   import SkyGradient from '$lib/components/SkyGradient.svelte';
+  import TodayModal from '$lib/components/TodayModal.svelte';
   import TomorrowModal from '$lib/components/TomorrowModal.svelte';
 
   let currentView = $state('dashboard');
+  let showTodayModal = $state(false);
   let showTomorrowModal = $state(false);
   let loadError = $state('');
 
@@ -52,8 +54,14 @@
   <Hero />
   <div class="main">
     <Timeline />
-    <Sidebar onOpenTomorrow={() => showTomorrowModal = true} />
+    <Sidebar
+      onOpenToday={() => showTodayModal = true}
+      onOpenTomorrow={() => showTomorrowModal = true}
+    />
   </div>
+  {#if showTodayModal}
+    <TodayModal onClose={() => showTodayModal = false} />
+  {/if}
   {#if showTomorrowModal}
     <TomorrowModal onClose={() => showTomorrowModal = false} />
   {/if}

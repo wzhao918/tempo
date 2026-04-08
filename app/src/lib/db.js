@@ -303,6 +303,64 @@ export async function gradeBlock(blockId, grade, gradeNote) {
   );
 }
 
+/** Update an ungraded day block's editable fields */
+export async function updateDayBlock(blockId, fields) {
+  // Map start/end back to DB column names
+  if (fields.start !== undefined) { fields.start_time = fields.start; delete fields.start; }
+  if (fields.end !== undefined) { fields.end_time = fields.end; delete fields.end; }
+
+  const allowed = ['name', 'emoji', 'type', 'start_time', 'end_time', 'note'];
+  const sets = [];
+  const values = [];
+  let paramIdx = 1;
+
+  for (const key of allowed) {
+    if (fields[key] !== undefined) {
+      sets.push(`${key} = $${paramIdx}`);
+      values.push(fields[key]);
+      paramIdx++;
+    }
+  }
+
+  if (sets.length === 0) return;
+  values.push(blockId);
+  await db.execute(
+    `UPDATE day_blocks SET ${sets.join(', ')} WHERE id = $${paramIdx} AND grade IS NULL`,
+    values
+  );
+}
+
+/** Add a new block to today's day instance */
+export async function addDayBlock(dayId, block) {
+  const result = await db.select(
+    'SELECT COALESCE(MAX(sort_order), -1) + 1 as next_order FROM day_blocks WHERE day_id = $1',
+    [dayId]
+  );
+  const sortOrder = result[0].next_order;
+
+  const insertResult = await db.execute(
+    `INSERT INTO day_blocks (day_id, sort_order, name, emoji, type, start_time, end_time, note)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+    [dayId, sortOrder, block.name, block.emoji || '', block.type || 'work', block.start, block.end, block.note || '']
+  );
+  return insertResult.lastInsertId;
+}
+
+/** Remove an ungraded day block */
+export async function removeDayBlock(blockId) {
+  await db.execute('DELETE FROM day_blocks WHERE id = $1 AND grade IS NULL', [blockId]);
+}
+
+/** Update sort_order for day blocks based on array position */
+export async function updateDayBlockSortOrders(blockIds) {
+  for (let i = 0; i < blockIds.length; i++) {
+    await db.execute(
+      'UPDATE day_blocks SET sort_order = $1 WHERE id = $2',
+      [i, blockIds[i]]
+    );
+  }
+}
+
 // ─── Daily Report Functions ────────────────────────────────────
 
 /** Generate a daily report for a given day */

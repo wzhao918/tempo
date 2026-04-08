@@ -190,93 +190,110 @@
 <div class="editor">
   <div class="block-list">
     {#each editingBlocks as block, i}
-      <div
-        class="block-row"
-        class:expanded={expandedIndex === i}
-        class:dragging={dragIndex === i}
-        class:drag-above={dragOverIndex === i && dragIndex !== null && dragIndex !== i}
-        class:drag-below={dragOverIndex === editingBlocks.length && i === editingBlocks.length - 1 && dragIndex !== null && dragIndex !== i}
-        style="border-left: 3px solid {getBlockHex(block.type)}"
-      >
-        <!-- svelte-ignore a11y_no_static_element_interactions -->
-        <!-- svelte-ignore a11y_click_events_have_key_events -->
-        <div class="block-summary" onclick={() => toggleExpand(i)}>
-          <!-- svelte-ignore a11y_no_static_element_interactions -->
-          <div
-            class="drag-handle"
-            onmousedown={(e) => { e.stopPropagation(); onDragStart(e, i); }}
-            title="Drag to reorder"
-          >
-            <span class="drag-dots">⠿</span>
+      {#if block.grade != null}
+        <!-- Locked (graded) block — non-interactive -->
+        <div
+          class="block-row locked"
+          style="border-left: 3px solid {getBlockHex(block.type)}"
+        >
+          <div class="block-summary locked-summary">
+            <span class="locked-icon">&#x1f512;</span>
+            <span class="summary-name">{block.name || 'Untitled'}</span>
+            <span class="summary-time">{block.start} – {block.end}</span>
+            <span class="summary-duration">{formatDuration(getBlockDuration(block))}</span>
+            <span class="grade-badge">{block.grade}/10</span>
           </div>
-
-          <span class="summary-name">{block.name || 'Untitled'}</span>
-
-          <span class="summary-time">{block.start} – {block.end}</span>
-          <span class="summary-duration">{formatDuration(getBlockDuration(block))}</span>
-          <span class="summary-type color-{getBlockColor(block.type)}">{block.type}</span>
-
-          <span class="expand-chevron">{expandedIndex === i ? '▾' : '▸'}</span>
         </div>
-
-        {#if expandedIndex === i}
-          <div class="field-grid">
-            <div class="field field-name">
-              <label>Name</label>
-              <input
-                type="text"
-                value={block.name}
-                oninput={(e) => updateField(i, 'name', e.target.value)}
-              />
+      {:else}
+        <!-- Editable block -->
+        <div
+          class="block-row"
+          class:expanded={expandedIndex === i}
+          class:dragging={dragIndex === i}
+          class:drag-above={dragOverIndex === i && dragIndex !== null && dragIndex !== i}
+          class:drag-below={dragOverIndex === editingBlocks.length && i === editingBlocks.length - 1 && dragIndex !== null && dragIndex !== i}
+          style="border-left: 3px solid {getBlockHex(block.type)}"
+        >
+          <!-- svelte-ignore a11y_no_static_element_interactions -->
+          <!-- svelte-ignore a11y_click_events_have_key_events -->
+          <div class="block-summary" onclick={() => toggleExpand(i)}>
+            <!-- svelte-ignore a11y_no_static_element_interactions -->
+            <div
+              class="drag-handle"
+              onmousedown={(e) => { e.stopPropagation(); onDragStart(e, i); }}
+              title="Drag to reorder"
+            >
+              <span class="drag-dots">⠿</span>
             </div>
 
-            <div class="field">
-              <label>Type</label>
-              <select
-                value={block.type}
-                onchange={(e) => updateField(i, 'type', e.target.value)}
-                class="color-{getBlockColor(block.type)}"
-              >
-                {#each BLOCK_TYPES as t}
-                  <option value={t.value}>{t.emoji} {t.label}</option>
-                {/each}
-              </select>
-            </div>
+            <span class="summary-name">{block.name || 'Untitled'}</span>
 
-            <div class="field field-small">
-              <label>Start</label>
-              <input
-                type="time"
-                value={block.start}
-                oninput={(e) => updateField(i, 'start', e.target.value)}
-              />
-            </div>
+            <span class="summary-time">{block.start} – {block.end}</span>
+            <span class="summary-duration">{formatDuration(getBlockDuration(block))}</span>
+            <span class="summary-type color-{getBlockColor(block.type)}">{block.type}</span>
 
-            <div class="field field-small">
-              <label>End</label>
-              <input
-                type="time"
-                value={block.end}
-                oninput={(e) => updateField(i, 'end', e.target.value)}
-              />
-            </div>
-
-            <div class="field field-wide">
-              <label>Note</label>
-              <input
-                type="text"
-                value={block.note}
-                oninput={(e) => updateField(i, 'note', e.target.value)}
-                placeholder="What's this block for?"
-              />
-            </div>
+            <span class="expand-chevron">{expandedIndex === i ? '▾' : '▸'}</span>
           </div>
 
-          <div class="block-row-actions">
-            <button class="remove-btn" onclick={() => removeBlockAt(i)}>Remove block</button>
-          </div>
-        {/if}
-      </div>
+          {#if expandedIndex === i}
+            <div class="field-grid">
+              <div class="field field-name">
+                <label>Name</label>
+                <input
+                  type="text"
+                  value={block.name}
+                  oninput={(e) => updateField(i, 'name', e.target.value)}
+                />
+              </div>
+
+              <div class="field">
+                <label>Type</label>
+                <select
+                  value={block.type}
+                  onchange={(e) => updateField(i, 'type', e.target.value)}
+                  class="color-{getBlockColor(block.type)}"
+                >
+                  {#each BLOCK_TYPES as t}
+                    <option value={t.value}>{t.emoji} {t.label}</option>
+                  {/each}
+                </select>
+              </div>
+
+              <div class="field field-small">
+                <label>Start</label>
+                <input
+                  type="time"
+                  value={block.start}
+                  oninput={(e) => updateField(i, 'start', e.target.value)}
+                />
+              </div>
+
+              <div class="field field-small">
+                <label>End</label>
+                <input
+                  type="time"
+                  value={block.end}
+                  oninput={(e) => updateField(i, 'end', e.target.value)}
+                />
+              </div>
+
+              <div class="field field-wide">
+                <label>Note</label>
+                <input
+                  type="text"
+                  value={block.note}
+                  oninput={(e) => updateField(i, 'note', e.target.value)}
+                  placeholder="What's this block for?"
+                />
+              </div>
+            </div>
+
+            <div class="block-row-actions">
+              <button class="remove-btn" onclick={() => removeBlockAt(i)}>Remove block</button>
+            </div>
+          {/if}
+        </div>
+      {/if}
     {/each}
   </div>
 
@@ -359,6 +376,34 @@
 
   .block-row:hover {
     border-color: var(--text-dim);
+  }
+
+  .block-row.locked {
+    opacity: 0.55;
+    cursor: default;
+  }
+
+  .block-row.locked:hover {
+    border-color: var(--border);
+  }
+
+  .locked-summary {
+    cursor: default !important;
+  }
+
+  .locked-icon {
+    font-size: 12px;
+    filter: grayscale(1);
+  }
+
+  .grade-badge {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--green);
+    background: var(--green-dim);
+    padding: 2px 8px;
+    border-radius: 4px;
+    white-space: nowrap;
   }
 
   .block-row.expanded {

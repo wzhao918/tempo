@@ -2,7 +2,7 @@
   import { store } from '$lib/scheduleStore.svelte.js';
   import { getCurrentBlockIndex, getNextBlockIndex, getBlockDuration, getBlockHex, getMinutesLeft, timeToMinutes } from '$lib/schedule.js';
 
-  let { onOpenTomorrow = () => {} } = $props();
+  let { onOpenToday = () => {}, onOpenTomorrow = () => {} } = $props();
 
   let now = $state(new Date());
   let nowMins = $derived(now.getHours() * 60 + now.getMinutes());
@@ -109,7 +109,9 @@
   <div class="sidebar-card">
     <div class="sidebar-card-title">Day Overview</div>
     <div class="day-bars">
-      <div class="bar-col">
+      <!-- svelte-ignore a11y_no_static_element_interactions -->
+      <!-- svelte-ignore a11y_click_events_have_key_events -->
+      <div class="bar-col bar-col-clickable" onclick={onOpenToday} title="Click to edit today">
         <div class="bar-label">Today</div>
         <div class="bar-track">
           {#each todaySegments as seg}
@@ -120,6 +122,7 @@
             {/if}
           {/each}
         </div>
+        <div class="bar-edit-hint">edit</div>
       </div>
       <!-- svelte-ignore a11y_no_static_element_interactions -->
       <!-- svelte-ignore a11y_click_events_have_key_events -->
