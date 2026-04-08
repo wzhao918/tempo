@@ -84,6 +84,16 @@ async function runMigrations() {
       summary      TEXT DEFAULT ''
     )
   `);
+
+  await db.execute(`
+    CREATE TABLE IF NOT EXISTS quests (
+      id          INTEGER PRIMARY KEY AUTOINCREMENT,
+      text        TEXT NOT NULL,
+      done        INTEGER DEFAULT 0,
+      target_date TEXT NOT NULL,
+      created_at  TEXT DEFAULT (datetime('now'))
+    )
+  `);
 }
 
 async function seedDefaultTemplate() {
@@ -361,8 +371,43 @@ export async function finalizePreviousDay(previousDate) {
   }
 }
 
+// ─── Quest Functions ──────────────────────────────────────────
+
+/** Get quests for a target date */
+export async function getQuests(targetDate) {
+  return await db.select(
+    'SELECT id, text, done, target_date FROM quests WHERE target_date = $1 ORDER BY id',
+    [targetDate]
+  );
+}
+
+/** Add a quest for a target date */
+export async function addQuest(text, targetDate) {
+  const result = await db.execute(
+    'INSERT INTO quests (text, target_date) VALUES ($1, $2)',
+    [text, targetDate]
+  );
+  return result.lastInsertId;
+}
+
+/** Toggle a quest's done state */
+export async function toggleQuest(questId) {
+  await db.execute('UPDATE quests SET done = 1 - done WHERE id = $1', [questId]);
+}
+
+/** Delete all quests for a target date */
+export async function clearQuests(targetDate) {
+  await db.execute('DELETE FROM quests WHERE target_date = $1', [targetDate]);
+}
+
+/** Delete expired quests (target_date before the given date) */
+export async function cleanupExpiredQuests(beforeDate) {
+  await db.execute('DELETE FROM quests WHERE target_date < $1', [beforeDate]);
+}
+
 /** Wipe all data — used by "Reset to Onboarding" */
 export async function clearAllData() {
+  await db.execute('DELETE FROM quests');
   await db.execute('DELETE FROM daily_reports');
   await db.execute('DELETE FROM day_blocks');
   await db.execute('DELETE FROM days');

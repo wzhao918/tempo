@@ -169,6 +169,11 @@
     overflow: hidden;
   }
 
+  .block-card:hover {
+    border-color: var(--text-dim);
+    background: var(--surface2);
+  }
+
   .block-item.active .block-card {
     border-color: var(--amber-dim);
     background: var(--surface2);

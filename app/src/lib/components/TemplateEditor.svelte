@@ -19,6 +19,13 @@
   let saving = $state(false);
   let hasChanges = $state(false);
 
+  // ─── Expand/collapse state ────────────────────────────────────
+  let expandedIndex = $state(-1);     // which block is expanded (-1 = none)
+
+  function toggleExpand(index) {
+    expandedIndex = expandedIndex === index ? -1 : index;
+  }
+
   // ─── Drag state ──────────────────────────────────────────────
   let dragIndex = $state(null);       // index of block being dragged
   let dragOverIndex = $state(null);   // index of the drop target gap
@@ -185,81 +192,90 @@
     {#each editingBlocks as block, i}
       <div
         class="block-row"
+        class:expanded={expandedIndex === i}
         class:dragging={dragIndex === i}
         class:drag-above={dragOverIndex === i && dragIndex !== null && dragIndex !== i}
         class:drag-below={dragOverIndex === editingBlocks.length && i === editingBlocks.length - 1 && dragIndex !== null && dragIndex !== i}
         style="border-left: 3px solid {getBlockHex(block.type)}"
       >
-        <div class="block-row-header">
+        <!-- svelte-ignore a11y_no_static_element_interactions -->
+        <!-- svelte-ignore a11y_click_events_have_key_events -->
+        <div class="block-summary" onclick={() => toggleExpand(i)}>
           <!-- svelte-ignore a11y_no_static_element_interactions -->
           <div
             class="drag-handle"
-            onmousedown={(e) => onDragStart(e, i)}
+            onmousedown={(e) => { e.stopPropagation(); onDragStart(e, i); }}
             title="Drag to reorder"
           >
             <span class="drag-dots">⠿</span>
-            <span class="block-row-number">{i + 1}</span>
           </div>
 
-          <div class="block-time-badge">
-            {block.start} – {block.end}
-            <span class="block-duration-badge">{formatDuration(getBlockDuration(block))}</span>
-          </div>
+          <span class="summary-name">{block.name || 'Untitled'}</span>
 
-          <button class="remove-btn" onclick={() => removeBlockAt(i)} title="Remove block">x</button>
+          <span class="summary-time">{block.start} – {block.end}</span>
+          <span class="summary-duration">{formatDuration(getBlockDuration(block))}</span>
+          <span class="summary-type color-{getBlockColor(block.type)}">{block.type}</span>
+
+          <span class="expand-chevron">{expandedIndex === i ? '▾' : '▸'}</span>
         </div>
 
-        <div class="field-grid">
-          <div class="field field-name">
-            <label>Name</label>
-            <input
-              type="text"
-              value={block.name}
-              oninput={(e) => updateField(i, 'name', e.target.value)}
-            />
+        {#if expandedIndex === i}
+          <div class="field-grid">
+            <div class="field field-name">
+              <label>Name</label>
+              <input
+                type="text"
+                value={block.name}
+                oninput={(e) => updateField(i, 'name', e.target.value)}
+              />
+            </div>
+
+            <div class="field">
+              <label>Type</label>
+              <select
+                value={block.type}
+                onchange={(e) => updateField(i, 'type', e.target.value)}
+                class="color-{getBlockColor(block.type)}"
+              >
+                {#each BLOCK_TYPES as t}
+                  <option value={t.value}>{t.emoji} {t.label}</option>
+                {/each}
+              </select>
+            </div>
+
+            <div class="field field-small">
+              <label>Start</label>
+              <input
+                type="time"
+                value={block.start}
+                oninput={(e) => updateField(i, 'start', e.target.value)}
+              />
+            </div>
+
+            <div class="field field-small">
+              <label>End</label>
+              <input
+                type="time"
+                value={block.end}
+                oninput={(e) => updateField(i, 'end', e.target.value)}
+              />
+            </div>
+
+            <div class="field field-wide">
+              <label>Note</label>
+              <input
+                type="text"
+                value={block.note}
+                oninput={(e) => updateField(i, 'note', e.target.value)}
+                placeholder="What's this block for?"
+              />
+            </div>
           </div>
 
-          <div class="field">
-            <label>Type</label>
-            <select
-              value={block.type}
-              onchange={(e) => updateField(i, 'type', e.target.value)}
-              class="color-{getBlockColor(block.type)}"
-            >
-              {#each BLOCK_TYPES as t}
-                <option value={t.value}>{t.emoji} {t.label}</option>
-              {/each}
-            </select>
+          <div class="block-row-actions">
+            <button class="remove-btn" onclick={() => removeBlockAt(i)}>Remove block</button>
           </div>
-
-          <div class="field field-small">
-            <label>Start</label>
-            <input
-              type="time"
-              value={block.start}
-              oninput={(e) => updateField(i, 'start', e.target.value)}
-            />
-          </div>
-
-          <div class="field field-small">
-            <label>End</label>
-            <input
-              type="time"
-              value={block.end}
-              oninput={(e) => updateField(i, 'end', e.target.value)}
-            />
-          </div>
-
-          <div class="field field-wide">
-            <label>Note</label>
-            <input
-              type="text"
-              value={block.note}
-              oninput={(e) => updateField(i, 'note', e.target.value)}
-              placeholder="What's this block for?"
-            />
-          </div>
-        </div>
+        {/if}
       </div>
     {/each}
   </div>
@@ -335,9 +351,18 @@
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: 10px;
-    padding: 16px 18px;
-    transition: transform 0.3s cubic-bezier(0.2, 0, 0, 1), box-shadow 0.3s ease, opacity 0.3s ease;
+    padding: 0;
+    transition: transform 0.3s cubic-bezier(0.2, 0, 0, 1), box-shadow 0.3s ease, opacity 0.3s ease, border-color 0.2s;
     position: relative;
+    overflow: hidden;
+  }
+
+  .block-row:hover {
+    border-color: var(--text-dim);
+  }
+
+  .block-row.expanded {
+    border-color: var(--amber-dim);
   }
 
   /* Drag feedback */
@@ -371,37 +396,81 @@
     box-shadow: 0 0 12px var(--amber), 0 0 4px var(--amber);
   }
 
-  .block-row-header {
+  /* ─── Summary row (collapsed view) ──────────────────────────── */
+  .block-summary {
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    margin-bottom: 12px;
+    gap: 10px;
+    padding: 12px 16px;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.15s;
+  }
+
+  .block-summary:hover {
+    background: var(--surface2);
+  }
+
+  .summary-name {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text);
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .summary-time {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+
+  .summary-duration {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    background: var(--surface2);
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: var(--text-mid);
+  }
+
+  .summary-type {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.05em;
+  }
+
+  .expand-chevron {
+    font-size: 12px;
+    color: var(--text-dim);
+    width: 16px;
+    text-align: center;
   }
 
   /* ─── Drag handle ─────────────────────────────────────────── */
   .drag-handle {
     display: flex;
     align-items: center;
-    gap: 8px;
     cursor: grab;
-    padding: 4px 8px;
-    border-radius: 6px;
-    transition: background 0.15s, box-shadow 0.15s;
+    padding: 2px 4px;
+    border-radius: 4px;
+    transition: background 0.15s;
     user-select: none;
   }
 
   .drag-handle:hover {
-    background: var(--surface2);
-    box-shadow: 0 0 0 1px var(--border);
+    background: rgba(232, 168, 68, 0.12);
   }
 
   .drag-handle:active {
     cursor: grabbing;
-    background: var(--amber-glow);
   }
 
   .drag-dots {
-    font-size: 18px;
+    font-size: 16px;
     color: var(--text-dim);
     line-height: 1;
     letter-spacing: -1px;
@@ -412,45 +481,27 @@
     color: var(--amber);
   }
 
-  .block-row-number {
-    font-family: 'DM Mono', monospace;
-    font-size: 11px;
-    color: var(--text-dim);
-    background: var(--surface2);
-    width: 24px;
-    height: 24px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+  /* ─── Expanded fields ─────────────────────────────────────── */
+  .field-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr auto auto;
+    gap: 10px;
+    align-items: end;
+    padding: 0 16px 12px;
   }
 
-  /* ─── Time badge ──────────────────────────────────────────── */
-  .block-time-badge {
-    font-family: 'DM Mono', monospace;
-    font-size: 12px;
-    color: var(--text-dim);
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .block-duration-badge {
-    font-size: 10px;
-    background: var(--surface2);
-    padding: 2px 6px;
-    border-radius: 4px;
-    color: var(--text-mid);
+  .block-row-actions {
+    padding: 0 16px 12px;
   }
 
   .remove-btn {
     font-family: 'DM Mono', monospace;
-    font-size: 14px;
+    font-size: 12px;
     color: var(--text-dim);
     background: none;
     border: 1px solid transparent;
     border-radius: 4px;
-    padding: 2px 8px;
+    padding: 4px 10px;
     cursor: pointer;
     transition: all 0.2s;
   }
@@ -461,12 +512,6 @@
     background: rgba(232, 122, 68, 0.1);
   }
 
-  .field-grid {
-    display: grid;
-    grid-template-columns: 2fr 1fr auto auto;
-    gap: 10px;
-    align-items: end;
-  }
 
   .field-wide {
     grid-column: 1 / -1;

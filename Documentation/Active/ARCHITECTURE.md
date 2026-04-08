@@ -1,6 +1,6 @@
 # Daily Companion — Architecture
 
-**Status:** v0.5 — Calendar model. Blocks are independent time slots (no contiguous requirement, gaps allowed, overlaps tolerated). Template editor simplified: no time donation, no auto-recalculation. Onboarding generates sparse starter blocks. Emoji field removed from editor and display. Drag-to-reorder improved with glowing drop indicators. Daily report viewing UI and notifications remain.
+**Status:** v0.6 — Sidebar rebuilt with day overview color bars (today vs tomorrow), quests module (tomorrow's task list with checkboxes), and stats. Template editor uses collapsed-by-default accordion cards. Hover highlighting on all cards. Time-of-day sky gradient. Settings persistence fixed. Daily report viewing UI and notifications remain.
 
 ---
 
@@ -96,6 +96,13 @@ daily_reports
   day_id      INTEGER FK → days.id
   generated_at TIMESTAMP
   summary     TEXT            -- JSON blob or structured text
+
+quests
+  id          INTEGER PRIMARY KEY
+  text        TEXT
+  done        BOOLEAN DEFAULT FALSE
+  target_date TEXT            -- "2026-04-09" (the day this quest is for)
+  created_at  TIMESTAMP
 ```
 
 **Key relationships:**

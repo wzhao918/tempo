@@ -8,12 +8,15 @@ import {
   updateSortOrders,
   getTodayDate, getDay, createDayFromTemplate, getDayBlocks, gradeBlock as dbGradeBlock,
   finalizePreviousDay, clearAllData,
+  getQuests, addQuest as dbAddQuest, toggleQuest as dbToggleQuest,
+  clearQuests as dbClearQuests, cleanupExpiredQuests,
 } from './db.js';
 
 // ─── Reactive State ────────────────────────────────────────────
 export const store = $state({
   blocks: [],            // today's day_blocks (with grade fields)
   templateBlocks: [],    // template_blocks for settings editor
+  quests: [],            // quests visible today (today's + tomorrow's entries)
   activeTemplateId: null,
   todayDayId: null,      // the day record ID for today
   todayDate: null,       // "YYYY-MM-DD"
@@ -63,6 +66,17 @@ export async function loadSchedule() {
 
   store.todayDayId = day.id;
   store.blocks = await getDayBlocks(day.id);
+  store.templateBlocks = templateBlocks;
+
+  // Load quests: show today's quests + any written for tomorrow
+  await cleanupExpiredQuests(todayDate);
+  const todayQuests = await getQuests(todayDate);
+  const tomorrow = new Date(todayDate);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const tomorrowDate = tomorrow.toISOString().split('T')[0];
+  const tomorrowQuests = await getQuests(tomorrowDate);
+  store.quests = [...todayQuests, ...tomorrowQuests];
+
   store.initialized = true;
   store.isFirstLaunch = false;
 }
@@ -125,6 +139,45 @@ export async function saveTemplateEdits(editedBlocks, removedIds) {
   store.templateBlocks = await getTemplateBlocks(store.activeTemplateId);
 }
 
+// ─── Quest Actions ────────────────────────────────────────────
+
+/** Add a quest for tomorrow */
+export async function addNewQuest(text) {
+  if (!store.todayDate) return;
+  const tomorrow = new Date(store.todayDate);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const tomorrowDate = tomorrow.toISOString().split('T')[0];
+  await dbAddQuest(text, tomorrowDate);
+  await reloadQuests();
+}
+
+/** Toggle quest completion */
+export async function toggleQuestDone(questId) {
+  await dbToggleQuest(questId);
+  await reloadQuests();
+}
+
+/** Clear all visible quests */
+export async function clearAllQuests() {
+  if (!store.todayDate) return;
+  await dbClearQuests(store.todayDate);
+  const tomorrow = new Date(store.todayDate);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  await dbClearQuests(tomorrow.toISOString().split('T')[0]);
+  store.quests = [];
+}
+
+async function reloadQuests() {
+  if (!store.todayDate) return;
+  const todayQuests = await getQuests(store.todayDate);
+  const tomorrow = new Date(store.todayDate);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const tomorrowQuests = await getQuests(tomorrow.toISOString().split('T')[0]);
+  store.quests = [...todayQuests, ...tomorrowQuests];
+}
+
+// ─── Onboarding ───────────────────────────────────────────────
+
 export async function completeOnboarding(templateId) {
   store.activeTemplateId = templateId;
   store.isFirstLaunch = false;
@@ -137,6 +190,7 @@ export async function resetToOnboarding() {
   await clearAllData();
   store.blocks = [];
   store.templateBlocks = [];
+  store.quests = [];
   store.activeTemplateId = null;
   store.todayDayId = null;
   store.todayDate = null;
