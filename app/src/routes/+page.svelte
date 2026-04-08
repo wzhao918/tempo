@@ -9,8 +9,10 @@
   import Settings from '$lib/components/Settings.svelte';
   import Onboarding from '$lib/components/Onboarding.svelte';
   import SkyGradient from '$lib/components/SkyGradient.svelte';
+  import TomorrowModal from '$lib/components/TomorrowModal.svelte';
 
   let currentView = $state('dashboard');
+  let showTomorrowModal = $state(false);
   let loadError = $state('');
 
   // Initialize database and load schedule on mount
@@ -50,8 +52,11 @@
   <Hero />
   <div class="main">
     <Timeline />
-    <Sidebar />
+    <Sidebar onOpenTomorrow={() => showTomorrowModal = true} />
   </div>
+  {#if showTomorrowModal}
+    <TomorrowModal onClose={() => showTomorrowModal = false} />
+  {/if}
 {/if}
 
 <style>

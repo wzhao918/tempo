@@ -1,46 +1,39 @@
 <script>
-  import { store, loadTemplateBlocks, saveTemplateEdits, resetToOnboarding } from '$lib/scheduleStore.svelte.js';
-  import TemplateEditor from './TemplateEditor.svelte';
+  import { resetToOnboarding } from '$lib/scheduleStore.svelte.js';
 
   let showResetConfirm = $state(false);
-  let showSaveToast = $state(false);
-  let toastTimeout = null;
 
-  // Load template blocks when Settings mounts
-  $effect(() => {
-    loadTemplateBlocks();
-    return () => { if (toastTimeout) clearTimeout(toastTimeout); };
-  });
+  // Notification preferences (placeholder for future Windows toast integration)
+  let transitionsOn = $state(true);
+  let warningsOn = $state(true);
 
   async function handleReset() {
     await resetToOnboarding();
-  }
-
-  async function handleSave(editedBlocks, removedIds) {
-    await saveTemplateEdits(editedBlocks, removedIds);
-    showSaveToast = true;
-    if (toastTimeout) clearTimeout(toastTimeout);
-    toastTimeout = setTimeout(() => { showSaveToast = false; }, 3000);
   }
 </script>
 
 <div class="settings-page">
   <div class="settings-header">
     <h2 class="settings-title">Settings</h2>
-    <p class="settings-subtitle">Edit your daily schedule template. Changes apply to future days.</p>
+    <p class="settings-subtitle">App preferences and configuration.</p>
   </div>
 
+  <!-- Notifications -->
   <div class="settings-section">
-    <div class="section-label">Schedule Template</div>
-    <TemplateEditor initialBlocks={store.templateBlocks} onSave={handleSave} />
+    <div class="section-label">Notifications</div>
+    <div class="settings-card">
+      <div class="notif-option">
+        <span>Block transitions</span>
+        <div class="toggle" class:on={transitionsOn} onclick={() => transitionsOn = !transitionsOn}></div>
+      </div>
+      <div class="notif-option">
+        <span>5-min warnings</span>
+        <div class="toggle" class:on={warningsOn} onclick={() => warningsOn = !warningsOn}></div>
+      </div>
+    </div>
   </div>
 
-  {#if showSaveToast}
-    <div class="save-toast">
-      Template saved. Changes will appear in tomorrow's schedule.
-    </div>
-  {/if}
-
+  <!-- Danger Zone -->
   <div class="settings-section">
     <div class="section-label">Danger Zone</div>
     {#if !showResetConfirm}
@@ -62,7 +55,7 @@
 <style>
   .settings-page {
     padding: 32px 40px;
-    max-width: 800px;
+    max-width: 600px;
     overflow-y: auto;
     flex: 1;
   }
@@ -97,6 +90,57 @@
     margin-bottom: 16px;
   }
 
+  /* ─── Card ─────────────────────────────────────────────────── */
+  .settings-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  /* ─── Notifications ─────────────────────────────────────────── */
+  .notif-option {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 15px;
+    color: var(--text-mid);
+  }
+
+  .toggle {
+    width: 36px;
+    height: 20px;
+    background: var(--border);
+    border-radius: 100px;
+    position: relative;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+
+  .toggle.on {
+    background: var(--amber);
+  }
+
+  .toggle::after {
+    content: '';
+    position: absolute;
+    width: 14px;
+    height: 14px;
+    background: white;
+    border-radius: 50%;
+    top: 3px;
+    left: 3px;
+    transition: transform 0.2s;
+  }
+
+  .toggle.on::after {
+    transform: translateX(16px);
+  }
+
+  /* ─── Danger Zone ──────────────────────────────────────────── */
   .reset-btn {
     font-family: 'DM Sans', sans-serif;
     font-size: 13px;
@@ -133,6 +177,22 @@
     gap: 8px;
   }
 
+  .grade-cancel {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    color: var(--text-dim);
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 6px 14px;
+    cursor: pointer;
+  }
+
+  .grade-cancel:hover {
+    color: var(--text-mid);
+    border-color: var(--text-dim);
+  }
+
   .reset-confirm-btn {
     font-family: 'DM Sans', sans-serif;
     font-size: 12px;
@@ -147,22 +207,5 @@
 
   .reset-confirm-btn:hover {
     filter: brightness(1.1);
-  }
-
-  .save-toast {
-    font-family: 'DM Mono', monospace;
-    font-size: 12px;
-    color: var(--green);
-    background: var(--green-dim);
-    border: 1px solid rgba(92, 184, 122, 0.3);
-    border-radius: 8px;
-    padding: 10px 16px;
-    margin-bottom: 20px;
-    animation: toast-in 0.3s ease-out;
-  }
-
-  @keyframes toast-in {
-    from { opacity: 0; transform: translateY(-8px); }
-    to { opacity: 1; transform: translateY(0); }
   }
 </style>
