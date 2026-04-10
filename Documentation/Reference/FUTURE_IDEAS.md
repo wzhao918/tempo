@@ -38,6 +38,12 @@ Ideas that came up during discovery but are out of scope for v1. Preserved here 
 - **Multi-user** — shared schedules, team visibility (very different product).
 - **Web app** — ship the Svelte frontend as a hosted web app alongside the desktop version.
 
+## Ambient / Environment
+- **Weather-aware sky gradient** — SkyGradient currently only knows the hour. Could pull local weather (cloudy, rainy, clear) and tint the gradient accordingly. Rainy days get a muted grey-blue; clear days get the full saturation we ship today; snow could add a subtle particle layer like the stars. (Parked 2026-04-10)
+- **Real sunset/sunrise times from location** — the color stops are currently anchored to fixed hours (6am dawn, 6pm sunset). For users far from the equator this will drift seasonally. Using real astronomical sunrise/sunset from lat/long would keep dawn actually at dawn. (Parked 2026-04-10)
+- **Seasonal palette shifts** — winter skies read differently from summer skies. Could bias the palette by month (cooler/greyer in winter, warmer in summer). Pairs naturally with the weather idea. (Parked 2026-04-10)
+- **Moon phase in night sky** — tiny moon glyph that tracks real lunar phase. Pure astronomical calculation, no API needed. (Parked 2026-04-10)
+
 ## UX
 - **Day-off / skip-day mode** — mark a day as skipped, no blocks to grade.
 - **Calendar view for reports** — visual calendar with color-coded days by overall grade.

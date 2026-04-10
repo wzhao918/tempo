@@ -289,4 +289,4 @@ v1 is: app runs, shows today's schedule from template, tracks current block in r
 
 ---
 
-_Last verified against codebase: 2026-04-09 (sleep block type, engine.svelte.js, component rewiring complete)_
+_Last verified against codebase: 2026-04-10 (home quest panel, template editor grid reshape, sky gradient rework — no architectural changes, UI only)_
