@@ -83,11 +83,11 @@
       note: '',
     });
 
-    // Sleep block (bed → wake, crosses midnight)
+    // Sleep block (bed → wake, crosses midnight) — day boundary
     blocks.push({
       name: 'Sleep',
       emoji: '',
-      type: 'rest',
+      type: 'sleep',
       start: bedTime,
       end: wakeTime,
       note: '',

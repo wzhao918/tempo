@@ -2,6 +2,7 @@
   import '../app.css';
   import { initDatabase } from '$lib/db.js';
   import { store, loadSchedule } from '$lib/scheduleStore.svelte.js';
+  import { startTick, stopTick, initEngine, computeBlockStates } from '$lib/engine.js';
   import Header from '$lib/components/Header.svelte';
   import Hero from '$lib/components/Hero.svelte';
   import Timeline from '$lib/components/Timeline.svelte';
@@ -17,14 +18,27 @@
   let showTomorrowModal = $state(false);
   let loadError = $state('');
 
-  // Initialize database and load schedule on mount
+  // Initialize database, load schedule, and start engine
   $effect(() => {
     initDatabase()
       .then(() => loadSchedule())
+      .then(() => {
+        // Start the centralized tick — components subscribe to engine state
+        startTick(() => store.blocks);
+
+        // Initialize day rollover detection
+        initEngine(store.todayDate, store.templateBlocks, async (newDate) => {
+          // Day boundary crossed while app is running — reload everything
+          await loadSchedule();
+          computeBlockStates(store.blocks);
+        });
+      })
       .catch((err) => {
         console.error('Failed to initialize:', err);
         loadError = String(err);
       });
+
+    return () => stopTick();
   });
 </script>
 

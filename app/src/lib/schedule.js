@@ -113,6 +113,40 @@ export function getBlockHex(type) {
     novel: '#b87cc4',
     open: '#7a9e8a',
     admin: '#c4a87c',
+    sleep: '#4a5a8a',
   };
   return map[type] || '#e8a844';
+}
+
+/** Build proportional color bar segments from an array of blocks */
+export function buildBarSegments(blocks) {
+  if (blocks.length === 0) return [];
+  const firstStart = timeToMinutes(blocks[0].start);
+  let lastEnd = timeToMinutes(blocks[blocks.length - 1].end);
+  if (lastEnd <= firstStart) lastEnd += 24 * 60;
+  const totalMins = lastEnd - firstStart;
+  if (totalMins <= 0) return [];
+
+  const segments = [];
+  let cursor = firstStart;
+
+  for (const block of blocks) {
+    const bStart = timeToMinutes(block.start);
+    let bEnd = timeToMinutes(block.end);
+    if (bEnd <= bStart) bEnd += 24 * 60;
+
+    if (bStart > cursor) {
+      segments.push({ type: 'gap', pct: ((bStart - cursor) / totalMins) * 100 });
+    }
+
+    segments.push({
+      type: block.type,
+      color: getBlockHex(block.type),
+      pct: ((bEnd - bStart) / totalMins) * 100,
+      name: block.name,
+    });
+    cursor = bEnd;
+  }
+
+  return segments;
 }

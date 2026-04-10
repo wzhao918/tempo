@@ -1,18 +1,13 @@
 <script>
-  let { currentView = 'dashboard', onNavigate = () => {} } = $props();
+  import { tick } from '$lib/engine.js';
 
-  let now = $state(new Date());
+  let { currentView = 'dashboard', onNavigate = () => {} } = $props();
 
   const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
   const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
-  let dateLine1 = $derived(days[now.getDay()]);
-  let dateLine2 = $derived(`${months[now.getMonth()]} ${now.getDate()}, ${now.getFullYear()}`);
-
-  $effect(() => {
-    const interval = setInterval(() => { now = new Date(); }, 60000);
-    return () => clearInterval(interval);
-  });
+  let dateLine1 = $derived(days[tick.now.getDay()]);
+  let dateLine2 = $derived(`${months[tick.now.getMonth()]} ${tick.now.getDate()}, ${tick.now.getFullYear()}`);
 </script>
 
 <div class="header">

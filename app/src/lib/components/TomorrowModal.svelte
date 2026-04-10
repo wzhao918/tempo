@@ -1,6 +1,6 @@
 <script>
   import { store, loadTemplateBlocks, saveTemplateEdits, addNewQuest, toggleQuestDone, clearAllQuests } from '$lib/scheduleStore.svelte.js';
-  import { getBlockHex, getBlockDuration, timeToMinutes } from '$lib/schedule.js';
+  import { getBlockHex, getBlockDuration, timeToMinutes, buildBarSegments } from '$lib/schedule.js';
   import TemplateEditor from './TemplateEditor.svelte';
 
   let { onClose = () => {} } = $props();
@@ -13,39 +13,6 @@
     loadTemplateBlocks();
     return () => { if (toastTimeout) clearTimeout(toastTimeout); };
   });
-
-  // ─── Color bar ──────────────────────────────────────────────
-  function buildBarSegments(blocks) {
-    if (blocks.length === 0) return [];
-    const firstStart = timeToMinutes(blocks[0].start);
-    let lastEnd = timeToMinutes(blocks[blocks.length - 1].end);
-    if (lastEnd <= firstStart) lastEnd += 24 * 60;
-    const totalMins = lastEnd - firstStart;
-    if (totalMins <= 0) return [];
-
-    const segments = [];
-    let cursor = firstStart;
-
-    for (const block of blocks) {
-      const bStart = timeToMinutes(block.start);
-      let bEnd = timeToMinutes(block.end);
-      if (bEnd <= bStart) bEnd += 24 * 60;
-
-      if (bStart > cursor) {
-        segments.push({ type: 'gap', pct: ((bStart - cursor) / totalMins) * 100 });
-      }
-
-      segments.push({
-        type: block.type,
-        color: getBlockHex(block.type),
-        pct: ((bEnd - bStart) / totalMins) * 100,
-        name: block.name,
-      });
-      cursor = bEnd;
-    }
-
-    return segments;
-  }
 
   let segments = $derived(buildBarSegments(store.templateBlocks));
 

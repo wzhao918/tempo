@@ -1,38 +1,36 @@
 <script>
   import { store } from '$lib/scheduleStore.svelte.js';
-  import { getCurrentBlockIndex, getNextBlockIndex, getBlockDuration, getBlockHex, getMinutesLeft, timeToMinutes } from '$lib/schedule.js';
+  import { tick, blockState } from '$lib/engine.js';
+  import { getBlockDuration, getBlockHex, getMinutesLeft, getNextBlockIndex, timeToMinutes, buildBarSegments } from '$lib/schedule.js';
 
   let { onOpenToday = () => {}, onOpenTomorrow = () => {} } = $props();
 
-  let now = $state(new Date());
-  let nowMins = $derived(now.getHours() * 60 + now.getMinutes());
-  let currentIdx = $derived(store.blocks.length > 0 ? getCurrentBlockIndex(store.blocks, nowMins) : -1);
-  let current = $derived(currentIdx >= 0 ? store.blocks[currentIdx] : null);
+  let current = $derived(blockState.currentIdx >= 0 ? store.blocks[blockState.currentIdx] : null);
 
   // ─── Stats ──────────────────────────────────────────────────
   let blocksLeft = $derived.by(() => {
     if (store.blocks.length === 0) return 0;
-    const startFrom = currentIdx >= 0 ? currentIdx : getNextBlockIndex(store.blocks, nowMins);
+    const startFrom = blockState.currentIdx >= 0 ? blockState.currentIdx : getNextBlockIndex(store.blocks, tick.nowMins);
     if (startFrom < 0) return 0;
     let count = 0;
     for (let i = startFrom; i < store.blocks.length; i++) {
-      if (store.blocks[i].type !== 'rest') count++;
+      if (store.blocks[i].type !== 'rest' && store.blocks[i].type !== 'sleep') count++;
     }
     return count;
   });
 
   let hoursLeft = $derived.by(() => {
     if (store.blocks.length === 0) return '0.0';
-    const startFrom = currentIdx >= 0 ? currentIdx : getNextBlockIndex(store.blocks, nowMins);
+    const startFrom = blockState.currentIdx >= 0 ? blockState.currentIdx : getNextBlockIndex(store.blocks, tick.nowMins);
     if (startFrom < 0) return '0.0';
     let total = 0;
     for (let i = startFrom; i < store.blocks.length; i++) {
-      if (store.blocks[i].type !== 'rest') {
+      if (store.blocks[i].type !== 'rest' && store.blocks[i].type !== 'sleep') {
         total += getBlockDuration(store.blocks[i]) / 60;
       }
     }
-    if (current && current.type !== 'rest') {
-      const elapsed = getBlockDuration(current) - getMinutesLeft(current, nowMins);
+    if (current && current.type !== 'rest' && current.type !== 'sleep') {
+      const elapsed = getBlockDuration(current) - getMinutesLeft(current, tick.nowMins);
       total -= elapsed / 60;
     }
     return Math.max(0, total).toFixed(1);
@@ -46,7 +44,7 @@
     if (dayEnd <= dayStart) dayEnd += 24 * 60;
     const dayTotal = dayEnd - dayStart;
     if (dayTotal <= 0) return 0;
-    const elapsed = nowMins - dayStart;
+    const elapsed = tick.nowMins - dayStart;
     return Math.min(100, Math.max(0, Math.round((elapsed / dayTotal) * 100)));
   });
 
@@ -58,48 +56,10 @@
     return total.toFixed(1);
   });
 
-  // ─── Color bar helpers ──────────────────────────────────────
-  function buildBarSegments(blocks) {
-    if (blocks.length === 0) return [];
-    // Find total time span from first start to last end
-    const firstStart = timeToMinutes(blocks[0].start);
-    let lastEnd = timeToMinutes(blocks[blocks.length - 1].end);
-    if (lastEnd <= firstStart) lastEnd += 24 * 60;
-    const totalMins = lastEnd - firstStart;
-    if (totalMins <= 0) return [];
-
-    const segments = [];
-    let cursor = firstStart;
-
-    for (const block of blocks) {
-      const bStart = timeToMinutes(block.start);
-      let bEnd = timeToMinutes(block.end);
-      if (bEnd <= bStart) bEnd += 24 * 60;
-
-      // Gap before this block
-      if (bStart > cursor) {
-        segments.push({ type: 'gap', pct: ((bStart - cursor) / totalMins) * 100 });
-      }
-
-      segments.push({
-        type: block.type,
-        color: getBlockHex(block.type),
-        pct: ((bEnd - bStart) / totalMins) * 100,
-        name: block.name,
-      });
-      cursor = bEnd;
-    }
-
-    return segments;
-  }
-
   let todaySegments = $derived(buildBarSegments(store.blocks));
   let tomorrowSegments = $derived(buildBarSegments(store.templateBlocks));
 
-  $effect(() => {
-    const interval = setInterval(() => { now = new Date(); }, 60000);
-    return () => clearInterval(interval);
-  });
+
 </script>
 
 {#if store.blocks.length > 0}

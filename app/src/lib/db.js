@@ -16,7 +16,7 @@ const DEFAULT_BLOCKS = [
   { name: "Busy Work & Admin", emoji: "📋", start: "15:00", end: "17:30", type: "admin",    note: "Email / Docs / Small tasks" },
   { name: "Open Time",         emoji: "🌅", start: "17:30", end: "21:00", type: "open",     note: "Dinner / Decompress / Social" },
   { name: "Novel",             emoji: "✍️",  start: "21:00", end: "23:00", type: "novel",    note: "Tokyo Syndrome" },
-  { name: "Wind Down",         emoji: "🌙", start: "23:00", end: "06:30", type: "rest",     note: "Rest. You earned it." },
+  { name: "Sleep",              emoji: "🌙", start: "23:00", end: "06:30", type: "sleep",    note: "Rest. You earned it." },
 ];
 
 // ─── Initialization ────────────────────────────────────────────
@@ -94,6 +94,10 @@ async function runMigrations() {
       created_at  TEXT DEFAULT (datetime('now'))
     )
   `);
+
+  // Migration: convert existing "Sleep" blocks from type "rest" to type "sleep"
+  await db.execute(`UPDATE template_blocks SET type = 'sleep' WHERE LOWER(name) LIKE '%sleep%' AND type = 'rest'`);
+  await db.execute(`UPDATE day_blocks SET type = 'sleep' WHERE LOWER(name) LIKE '%sleep%' AND type = 'rest'`);
 }
 
 async function seedDefaultTemplate() {
@@ -218,7 +222,9 @@ export async function addBlocksToTemplate(templateId, blocks) {
 
 // ─── Day Instance Functions ────────────────────────────────────
 
-/** Get the date string for "today" based on the day boundary (first block's start time) */
+/** Get the date string for "today" based on the day boundary (sleep block's end time).
+ *  The sleep block spans midnight — its end_time is the moment the new day begins.
+ *  Falls back to first block's start time if no sleep block exists. */
 export function getTodayDate(templateBlocks) {
   if (!templateBlocks || templateBlocks.length === 0) {
     return new Date().toISOString().split('T')[0];
@@ -227,10 +233,20 @@ export function getTodayDate(templateBlocks) {
   const now = new Date();
   const nowMins = now.getHours() * 60 + now.getMinutes();
 
-  // Day boundary = first block's start time
-  const firstStart = templateBlocks[0].start || templateBlocks[0].start_time;
-  const [bh, bm] = firstStart.split(':').map(Number);
-  const boundaryMins = bh * 60 + bm;
+  // Find the sleep block — its end_time IS the day boundary
+  const sleepBlock = templateBlocks.find(b => (b.type === 'sleep'));
+  let boundaryMins;
+
+  if (sleepBlock) {
+    const endTime = sleepBlock.end || sleepBlock.end_time;
+    const [bh, bm] = endTime.split(':').map(Number);
+    boundaryMins = bh * 60 + bm;
+  } else {
+    // Fallback: first block's start time
+    const firstStart = templateBlocks[0].start || templateBlocks[0].start_time;
+    const [bh, bm] = firstStart.split(':').map(Number);
+    boundaryMins = bh * 60 + bm;
+  }
 
   // If current time is before the boundary, we're still in "yesterday's" day
   if (nowMins < boundaryMins) {

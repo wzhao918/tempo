@@ -1,6 +1,6 @@
-# Daily Companion
-**v1.0 — April 4, 2026**
-**Phase: V1 — ACTIVE DEVELOPMENT**
+# Tempo
+**v1.1 — April 9, 2026**
+**Phase: V1 — ACTIVE DEVELOPMENT (post-audit)**
 
 Hi Claude
 
@@ -28,9 +28,11 @@ Systems thinker without hands-on coding experience. Avoid jargon — aim for pla
 
 ## 0. What This System Is
 
-A personal daily schedule companion that runs as a native desktop app (Tauri + Svelte). Shows your day as a timeline of time blocks, tracks the current block in real-time, fires native Windows notifications at transitions, and lets you self-grade each block when done. Generates a daily report at midnight.
+A personal daily schedule companion that runs as a native desktop app (Tauri + Svelte). You design a day shape (template of time blocks), live against it with real-time tracking, and grade each block when done. The feedback loop — plan, execute, evaluate — is the core product.
 
 Built for personal use, but architected so the frontend logic is portable to web/mobile if it becomes a product.
+
+**Scheduling model: Path B (template-driven).** Most days have the same shape. The template is the scaffold; each day gets an auto-copy at the day boundary. One-off changes are made to today's instance. See ARCHITECTURE.md § "Scheduling Model" for details and the Path A compatibility notes.
 
 ---
 
@@ -40,17 +42,31 @@ Settled decisions. Do not change without explicit discussion.
 
 - **Tauri v2** is the desktop framework. Rust layer stays thin — OS integration only.
 - **Svelte** is the frontend framework. All business logic lives here, not in Rust.
-- **SQLite** is the data store, accessed through a single data access module.
-- **Blocks are editable until graded**, then frozen forever. The grade seals the record.
-- **Schedule templates** are separate from daily instances. Edit the template in settings; each day gets a copy.
+- **SQLite** is the data store, accessed through a single data access module (`db.js`).
+- **Blocks are editable until graded**, then frozen forever. The grade seals the record. Enforced at DB level.
+- **Schedule templates** are separate from daily instances. The template is a scaffold; each day gets a copy.
 - **The day is the atomic unit.** Every feature hangs off a single day's schedule.
+- **Sleep is the day boundary.** The Sleep block (`type: "sleep"`) spans midnight. Its end time defines when the new day begins. One per template, always present, not deletable.
+- **`db.js` is the only file that touches SQLite.** No other module imports `@tauri-apps/plugin-sql`.
+
+### Known Gaps (Remaining)
+
+- **Transition detection** — engine.js computes block states but doesn't yet detect the *moment* a state changes (needed for notifications).
+- **Notification toggles** in Settings are unwired (component-local state, not persisted).
+- **Report generation and day finalization** still live in `db.js` (business logic, not data access). Works fine, just misplaced.
+- **Quest panel** only visible in Tomorrow modal, not on the main dashboard sidebar.
 
 ---
 
 ## 2. Architecture
 
-Important: Full system architecture lives in `Documentation/Active/ARCHITECTURE.md`.
-Before modifying any file in `src-tauri/` or the data layer, read it first.
+Full system architecture lives in `Documentation/Active/ARCHITECTURE.md`.
+**Read it before modifying any file in `src-tauri/`, `db.js`, `scheduleStore.svelte.js`, or `schedule.js`.**
+
+Key things an agent should know:
+- The architecture doc is honest about what's built vs. what's missing. Check the "Known Structural Gaps" and "What's Not Built Yet" sections before assuming something exists.
+- Block state (active/past/completed/graded) is currently re-derived per component, not centralized. If adding a feature that needs block state, don't add another independent computation — this is a known problem to solve.
+- The "Tomorrow" modal edits the template (all future days), not a specific future day. This is intentional (Path B model).
 
 ---
 

@@ -15,14 +15,9 @@
    *   Night (21-24):     deep navy/black
    */
 
-  let now = $state(new Date());
+  import { tick } from '$lib/engine.js';
 
-  $effect(() => {
-    const interval = setInterval(() => { now = new Date(); }, 60000);
-    return () => clearInterval(interval);
-  });
-
-  let hour = $derived(now.getHours() + now.getMinutes() / 60);
+  let hour = $derived(tick.hour);
 
   // Interpolate between color stops based on current hour
   function lerp(a, b, t) {

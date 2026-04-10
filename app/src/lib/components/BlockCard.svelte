@@ -2,20 +2,20 @@
   import { timeToMinutes, minutesToDisplay, formatDuration, getBlockColor, getBlockDuration, getBlockProgress } from '$lib/schedule.js';
   import { gradeBlock } from '$lib/scheduleStore.svelte.js';
 
-  let { block, index, currentIdx, nowMins } = $props();
+  let { block, index, currentIdx, nowMins, blockStateValue = 'upcoming' } = $props();
 
   let startMins = $derived(timeToMinutes(block.start));
   let endMins = $derived(timeToMinutes(block.end));
   let duration = $derived(getBlockDuration(block));
   let color = $derived(getBlockColor(block.type));
 
-  let crossesMidnight = $derived(endMins <= startMins);
-  let isActive = $derived(currentIdx >= 0 && index === currentIdx);
-  let isPast = $derived(!crossesMidnight && endMins <= nowMins && !isActive);
+  // Use pre-computed state from engine
+  let isActive = $derived(blockStateValue === 'active');
+  let isPast = $derived(blockStateValue === 'completed');
+  let isGraded = $derived(blockStateValue === 'graded');
+  let needsGrading = $derived(isPast && block.type !== 'rest' && block.type !== 'sleep');
   let distance = $derived(currentIdx >= 0 ? Math.abs(index - currentIdx) : 999);
   let isCollapsed = $derived(currentIdx >= 0 && distance > 2);
-  let isGraded = $derived(block.grade !== null && block.grade !== undefined);
-  let needsGrading = $derived(isPast && !isGraded && block.type !== 'rest');
 
   let progress = $derived(isActive ? getBlockProgress(block, nowMins) : 0);
 

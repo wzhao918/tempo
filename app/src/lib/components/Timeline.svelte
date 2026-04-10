@@ -1,24 +1,15 @@
 <script>
   import { store } from '$lib/scheduleStore.svelte.js';
-  import { getCurrentBlockIndex } from '$lib/schedule.js';
+  import { tick, blockState } from '$lib/engine.js';
   import BlockCard from './BlockCard.svelte';
-
-  let now = $state(new Date());
-  let nowMins = $derived(now.getHours() * 60 + now.getMinutes());
-  let currentIdx = $derived(store.blocks.length > 0 ? getCurrentBlockIndex(store.blocks, nowMins) : -1);
-
-  $effect(() => {
-    const interval = setInterval(() => { now = new Date(); }, 1000);
-    return () => clearInterval(interval);
-  });
 
   // Scroll active block into view on block change
   let lastBlock = $state(-1);
   $effect(() => {
-    if (store.blocks.length > 0 && currentIdx !== lastBlock) {
-      lastBlock = currentIdx;
+    if (store.blocks.length > 0 && blockState.currentIdx !== lastBlock) {
+      lastBlock = blockState.currentIdx;
       setTimeout(() => {
-        const el = document.getElementById(`block-${currentIdx}`);
+        const el = document.getElementById(`block-${blockState.currentIdx}`);
         if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       }, 100);
     }
@@ -31,7 +22,7 @@
   <div class="timeline">
     {#each store.blocks as block, i}
       <div id="block-{i}">
-        <BlockCard {block} index={i} {currentIdx} {nowMins} />
+        <BlockCard {block} index={i} currentIdx={blockState.currentIdx} nowMins={tick.nowMins} blockStateValue={blockState.states[i]} />
       </div>
     {/each}
   </div>

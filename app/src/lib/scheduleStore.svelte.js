@@ -13,6 +13,7 @@ import {
   getQuests, addQuest as dbAddQuest, toggleQuest as dbToggleQuest,
   clearQuests as dbClearQuests, cleanupExpiredQuests,
 } from './db.js';
+import { updateTemplateRef } from './engine.js';
 
 // ─── Reactive State ────────────────────────────────────────────
 export const store = $state({
@@ -184,6 +185,7 @@ export async function saveTemplateEdits(editedBlocks, removedIds) {
 
   // Reload template blocks from DB so store is in sync
   store.templateBlocks = await getTemplateBlocks(store.activeTemplateId);
+  updateTemplateRef(store.templateBlocks);
 }
 
 // ─── Quest Actions ────────────────────────────────────────────

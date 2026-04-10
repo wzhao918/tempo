@@ -13,6 +13,9 @@
     { value: 'novel',    label: 'Creative',       emoji: '✍️' },
   ];
 
+  // Sleep blocks can't be edited to a different type — filter it out of the selector
+  const EDITABLE_BLOCK_TYPES = BLOCK_TYPES;
+
   // ─── Local editing state ─────────────────────────────────────
   let editingBlocks = $state([]);
   let removedIds = $state([]);
@@ -98,9 +101,20 @@
     showNewBlockForm = false;
   }
 
+  // ─── Sleep block helpers ──────────────────────────────────────
+  function isSleepBlock(block) {
+    return block.type === 'sleep';
+  }
+
+  // Split blocks: regular blocks (draggable/deletable) and sleep block (anchored at bottom)
+  let regularBlocks = $derived(editingBlocks.filter(b => !isSleepBlock(b)));
+  let sleepBlock = $derived(editingBlocks.find(b => isSleepBlock(b)));
+  let sleepBlockIndex = $derived(editingBlocks.findIndex(b => isSleepBlock(b)));
+
   // ─── Remove block ────────────────────────────────────────────
   function removeBlockAt(index) {
     const block = editingBlocks[index];
+    if (isSleepBlock(block)) return; // Sleep block cannot be removed
     if (block.id) {
       removedIds = [...removedIds, block.id];
     }
@@ -111,6 +125,7 @@
   // ─── Drag-to-reorder ────────────────────────────────────────
   function onDragStart(e, index) {
     e.preventDefault();
+    if (isSleepBlock(editingBlocks[index])) return; // Sleep block is not draggable
     dragIndex = index;
     isDragging = true;
 
@@ -190,7 +205,9 @@
 <div class="editor">
   <div class="block-list">
     {#each editingBlocks as block, i}
-      {#if block.grade != null}
+      {#if isSleepBlock(block)}
+        <!-- Sleep block renders separately at bottom -->
+      {:else if block.grade != null}
         <!-- Locked (graded) block — non-interactive -->
         <div
           class="block-row locked"
@@ -296,6 +313,72 @@
       {/if}
     {/each}
   </div>
+
+  <!-- Sleep block — always anchored at bottom, not draggable, not deletable -->
+  {#if sleepBlock}
+    <div
+      class="block-row sleep-block"
+      class:expanded={expandedIndex === sleepBlockIndex}
+      style="border-left: 3px solid {getBlockHex('sleep')}"
+    >
+      <!-- svelte-ignore a11y_no_static_element_interactions -->
+      <!-- svelte-ignore a11y_click_events_have_key_events -->
+      <div class="block-summary" onclick={() => toggleExpand(sleepBlockIndex)}>
+        <span class="sleep-anchor-icon">🌙</span>
+        <span class="summary-name">{sleepBlock.name || 'Sleep'}</span>
+        <span class="summary-time">{sleepBlock.start} – {sleepBlock.end}</span>
+        <span class="summary-duration">{formatDuration(getBlockDuration(sleepBlock))}</span>
+        <span class="sleep-label">day boundary</span>
+        <span class="expand-chevron">{expandedIndex === sleepBlockIndex ? '▾' : '▸'}</span>
+      </div>
+
+      {#if expandedIndex === sleepBlockIndex}
+        <div class="field-grid">
+          <div class="field field-name">
+            <label>Name</label>
+            <input
+              type="text"
+              value={sleepBlock.name}
+              oninput={(e) => updateField(sleepBlockIndex, 'name', e.target.value)}
+            />
+          </div>
+
+          <div class="field">
+            <label>Type</label>
+            <div class="sleep-type-fixed color-sleep">sleep</div>
+          </div>
+
+          <div class="field field-small">
+            <label>Bedtime</label>
+            <input
+              type="time"
+              value={sleepBlock.start}
+              oninput={(e) => updateField(sleepBlockIndex, 'start', e.target.value)}
+            />
+          </div>
+
+          <div class="field field-small">
+            <label>Wake up</label>
+            <input
+              type="time"
+              value={sleepBlock.end}
+              oninput={(e) => updateField(sleepBlockIndex, 'end', e.target.value)}
+            />
+          </div>
+
+          <div class="field field-wide">
+            <label>Note</label>
+            <input
+              type="text"
+              value={sleepBlock.note}
+              oninput={(e) => updateField(sleepBlockIndex, 'note', e.target.value)}
+              placeholder="Wind down ritual, etc."
+            />
+          </div>
+        </div>
+      {/if}
+    </div>
+  {/if}
 
   {#if showNewBlockForm}
     <div class="new-block-stage">
@@ -735,6 +818,47 @@
   .save-btn:disabled {
     opacity: 0.4;
     cursor: not-allowed;
+  }
+
+  /* ─── Sleep block (anchored at bottom) ────────────────────── */
+  .sleep-block {
+    margin-top: 16px;
+    border-style: dashed !important;
+    border-color: rgba(74, 90, 138, 0.4) !important;
+    background: rgba(74, 90, 138, 0.05);
+  }
+
+  .sleep-block:hover {
+    border-color: rgba(74, 90, 138, 0.6) !important;
+  }
+
+  .sleep-block.expanded {
+    border-color: rgba(74, 90, 138, 0.6) !important;
+    border-style: solid !important;
+  }
+
+  .sleep-anchor-icon {
+    font-size: 14px;
+    filter: grayscale(0.3);
+  }
+
+  .sleep-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    color: #4a5a8a;
+    background: rgba(74, 90, 138, 0.12);
+    padding: 2px 8px;
+    border-radius: 4px;
+  }
+
+  .sleep-type-fixed {
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    padding: 8px 10px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
   }
 
   /* Responsive stacking */
