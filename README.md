@@ -6,6 +6,14 @@ Built for personal use, but architected so the frontend logic is portable to web
 
 ---
 
+<img width="2558" height="1247" alt="image" src="https://github.com/user-attachments/assets/23739fed-0652-4f89-9c9a-cea6fc2c3f6c" />
+
+<img width="2559" height="1203" alt="image" src="https://github.com/user-attachments/assets/f965c1a2-87cd-478c-80a7-765be2b5e156" />
+
+
+
+---
+
 ## What It Does
 
 - **Timeline view** — See your whole day at a glance. The current block is highlighted; past blocks show their grade.
