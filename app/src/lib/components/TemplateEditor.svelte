@@ -610,12 +610,19 @@
   }
 
   /* ─── Expanded fields ─────────────────────────────────────── */
+  /* Three rows: Name (full), Type/Start/End, Note (full).
+     Previously this was a single row of 2fr/1fr/auto/auto which
+     squeezed the Type dropdown too small inside the Tomorrow modal. */
   .field-grid {
     display: grid;
-    grid-template-columns: 2fr 1fr auto auto;
+    grid-template-columns: 1fr auto auto;
     gap: 10px;
     align-items: end;
     padding: 0 16px 12px;
+  }
+
+  .field-grid .field-name {
+    grid-column: 1 / -1;
   }
 
   .block-row-actions {
@@ -717,11 +724,12 @@
 
   .stage-grid {
     display: grid;
-    grid-template-columns: 2fr 1fr auto auto;
+    grid-template-columns: 1fr auto auto;
     gap: 10px;
     align-items: end;
   }
 
+  .stage-grid .field-name,
   .stage-grid .field-wide {
     grid-column: 1 / -1;
   }
@@ -861,12 +869,15 @@
     border-radius: 6px;
   }
 
-  /* Responsive stacking */
+  /* Responsive stacking — on narrow screens, collapse the Type/Start/End
+     row into a single column so nothing crowds. */
   @media (max-width: 600px) {
     .field-grid,
     .stage-grid {
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: 1fr;
     }
+    .field-grid .field-name,
+    .stage-grid .field-name,
     .field-wide {
       grid-column: 1 / -1;
     }

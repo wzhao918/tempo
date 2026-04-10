@@ -1,9 +1,14 @@
 <script>
-  import { store } from '$lib/scheduleStore.svelte.js';
+  import { store, toggleQuestDone } from '$lib/scheduleStore.svelte.js';
   import { tick, blockState } from '$lib/engine.svelte.js';
   import { getBlockDuration, getBlockHex, getMinutesLeft, getNextBlockIndex, timeToMinutes, buildBarSegments } from '$lib/schedule.js';
 
   let { onOpenToday = () => {}, onOpenTomorrow = () => {} } = $props();
+
+  // Quests scoped to today. Tomorrow's quests stay hidden until the
+  // Tomorrow modal, per the "home sidebar is read-mostly" rule.
+  let todayQuests = $derived(store.quests.filter(q => q.target_date === store.todayDate));
+  let allQuestsDone = $derived(todayQuests.length > 0 && todayQuests.every(q => q.done));
 
   let current = $derived(blockState.currentIdx >= 0 ? store.blocks[blockState.currentIdx] : null);
 
@@ -100,6 +105,32 @@
         <div class="bar-edit-hint">edit</div>
       </div>
     </div>
+  </div>
+
+  <!-- Quests -->
+  <div class="sidebar-card">
+    <div class="sidebar-card-title">Quests</div>
+    {#if todayQuests.length === 0}
+      <div class="quest-empty">
+        No quests today. Create your own for tomorrow →
+      </div>
+    {:else}
+      <div class="quest-list">
+        {#each todayQuests as quest (quest.id)}
+          <label class="quest-row" class:done={quest.done}>
+            <input
+              type="checkbox"
+              checked={quest.done}
+              onchange={() => toggleQuestDone(quest.id)}
+            />
+            <span class="quest-text">{quest.text}</span>
+          </label>
+        {/each}
+      </div>
+      {#if allQuestsDone}
+        <div class="quest-all-done">all done</div>
+      {/if}
+    {/if}
   </div>
 
   <!-- Stats -->
@@ -257,6 +288,61 @@
   .stat-label {
     font-size: 13px;
     color: var(--text-dim);
+  }
+
+  /* ─── Quests ────────────────────────────────────────────────── */
+  .quest-empty {
+    font-size: 12px;
+    color: var(--text-dim);
+    line-height: 1.5;
+    font-style: italic;
+  }
+
+  .quest-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .quest-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 5px 0;
+    cursor: pointer;
+  }
+
+  .quest-row input[type="checkbox"] {
+    accent-color: var(--amber);
+    width: 14px;
+    height: 14px;
+    cursor: pointer;
+    margin-top: 2px;
+    flex-shrink: 0;
+  }
+
+  .quest-text {
+    font-size: 13px;
+    color: var(--text);
+    line-height: 1.3;
+    word-break: break-word;
+  }
+
+  .quest-row.done .quest-text {
+    text-decoration: line-through;
+    color: var(--text-dim);
+  }
+
+  .quest-all-done {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border);
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--amber);
+    text-align: center;
   }
 
 </style>
