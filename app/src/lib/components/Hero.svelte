@@ -1,6 +1,6 @@
 <script>
   import { store } from '$lib/scheduleStore.svelte.js';
-  import { tick, blockState } from '$lib/engine.js';
+  import { tick, blockState } from '$lib/engine.svelte.js';
   import { getBlockColor, getBlockHex, getMinutesLeft, formatCountdown, timeToMinutes } from '$lib/schedule.js';
 
   let current = $derived(blockState.currentIdx >= 0 ? store.blocks[blockState.currentIdx] : null);

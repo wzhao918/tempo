@@ -13,7 +13,7 @@ import {
   getQuests, addQuest as dbAddQuest, toggleQuest as dbToggleQuest,
   clearQuests as dbClearQuests, cleanupExpiredQuests,
 } from './db.js';
-import { updateTemplateRef } from './engine.js';
+import { updateTemplateRef } from './engine.svelte.js';
 
 // ─── Reactive State ────────────────────────────────────────────
 export const store = $state({

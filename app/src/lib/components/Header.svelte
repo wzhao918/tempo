@@ -1,5 +1,5 @@
 <script>
-  import { tick } from '$lib/engine.js';
+  import { tick } from '$lib/engine.svelte.js';
 
   let { currentView = 'dashboard', onNavigate = () => {} } = $props();
 

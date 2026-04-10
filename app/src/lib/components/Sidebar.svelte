@@ -1,6 +1,6 @@
 <script>
   import { store } from '$lib/scheduleStore.svelte.js';
-  import { tick, blockState } from '$lib/engine.js';
+  import { tick, blockState } from '$lib/engine.svelte.js';
   import { getBlockDuration, getBlockHex, getMinutesLeft, getNextBlockIndex, timeToMinutes, buildBarSegments } from '$lib/schedule.js';
 
   let { onOpenToday = () => {}, onOpenTomorrow = () => {} } = $props();

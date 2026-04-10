@@ -2,7 +2,7 @@
   import '../app.css';
   import { initDatabase } from '$lib/db.js';
   import { store, loadSchedule } from '$lib/scheduleStore.svelte.js';
-  import { startTick, stopTick, initEngine, computeBlockStates } from '$lib/engine.js';
+  import { startTick, stopTick, initEngine, computeBlockStates } from '$lib/engine.svelte.js';
   import Header from '$lib/components/Header.svelte';
   import Hero from '$lib/components/Hero.svelte';
   import Timeline from '$lib/components/Timeline.svelte';

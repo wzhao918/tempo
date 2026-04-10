@@ -15,7 +15,7 @@
    *   Night (21-24):     deep navy/black
    */
 
-  import { tick } from '$lib/engine.js';
+  import { tick } from '$lib/engine.svelte.js';
 
   let hour = $derived(tick.hour);
 

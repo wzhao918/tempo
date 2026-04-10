@@ -51,7 +51,7 @@ Settled decisions. Do not change without explicit discussion.
 
 ### Known Gaps (Remaining)
 
-- **Transition detection** — engine.js computes block states but doesn't yet detect the *moment* a state changes (needed for notifications).
+- **Transition detection** — engine.svelte.js computes block states but doesn't yet detect the *moment* a state changes (needed for notifications).
 - **Notification toggles** in Settings are unwired (component-local state, not persisted).
 - **Report generation and day finalization** still live in `db.js` (business logic, not data access). Works fine, just misplaced.
 - **Quest panel** only visible in Tomorrow modal, not on the main dashboard sidebar.

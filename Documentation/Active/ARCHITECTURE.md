@@ -73,11 +73,11 @@ A future user preference toggle could select between these models. For now, all 
 | **Quest** | A to-do item scoped to a specific date. | Created for tomorrow, carried into today, cleaned up after. |
 | **Daily Report** | Auto-generated summary of a Day's blocks and grades. | Generated at day finalization. Read-only. |
 
-### Implemented in engine.js
+### Implemented in engine.svelte.js
 
 | Concept | Status |
 |---------|--------|
-| **Tick** (centralized heartbeat) | Built. Single 1-second interval in `engine.js`. All components subscribe to `tick` state instead of running their own timers. |
+| **Tick** (centralized heartbeat) | Built. Single 1-second interval in `engine.svelte.js`. All components subscribe to `tick` state instead of running their own timers. |
 | **Block State** (per-block state computation) | Built. `computeBlockStates()` runs once per tick, exposes `blockState.states[]` with values: `upcoming`, `active`, `completed`, `graded`. Components read from this instead of deriving independently. |
 | **Day Rollover Detection** | Built. `checkDayRollover()` runs each tick, compares current boundary date to loaded date, calls reload callback when they diverge. |
 
@@ -164,7 +164,7 @@ The **Sleep block** defines the day boundary:
 │                   Svelte UI                      │
 │  Components, modals, reactive display            │
 │  (Hero, Timeline, BlockCard, Sidebar, etc.)      │
-│  Subscribe to engine.js for time and state.      │
+│  Subscribe to engine.svelte.js for time and state.      │
 │                                                  │
 │  ┌──────────────────────────────────────────┐    │
 │  │      scheduleStore.svelte.js             │    │
@@ -174,7 +174,7 @@ The **Sleep block** defines the day boundary:
 │  └──────────────────┬───────────────────────┘    │
 │                     │                            │
 │  ┌──────────────────┴───────────────────────┐    │
-│  │           engine.js (Business Logic)     │    │
+│  │           engine.svelte.js (Business Logic)     │    │
 │  │  Centralized tick (1s heartbeat)         │    │
 │  │  Block state computation                 │    │
 │  │  Day rollover detection                  │    │
@@ -194,7 +194,7 @@ The **Sleep block** defines the day boundary:
 
 ### Remaining Structural Gaps
 
-**Report generation and day finalization** still live in `db.js`. These are business logic, not data access. A future cleanup would move them into `engine.js` or a dedicated reporting module. Not urgent — they work correctly where they are.
+**Report generation and day finalization** still live in `db.js`. These are business logic, not data access. A future cleanup would move them into `engine.svelte.js` or a dedicated reporting module. Not urgent — they work correctly where they are.
 
 **Settings notification toggles** are still component-local state (not persisted, not wired to anything). This will matter when notifications are implemented.
 
@@ -206,7 +206,7 @@ The **Sleep block** defines the day boundary:
 
 | File | Role | Responsibility |
 |------|------|---------------|
-| `src/lib/engine.js` | Business Logic | Centralized tick (1s), block state computation, day rollover detection. Single time authority — components subscribe instead of running own timers. |
+| `src/lib/engine.svelte.js` | Business Logic | Centralized tick (1s), block state computation, day rollover detection. Single time authority — components subscribe instead of running own timers. |
 | `src/lib/db.js` | Data Access | All SQLite queries. Also contains day boundary computation (`getTodayDate`), report generation, day finalization. |
 | `src/lib/scheduleStore.svelte.js` | Reactive Store | App state (`$state`), action dispatch (load, grade, save edits, quests). Orchestrates day creation. |
 | `src/lib/schedule.js` | Pure Utilities | Time math, block color maps, `buildBarSegments()`. No state, no side effects. |
@@ -277,7 +277,7 @@ UPCOMING ──(start time)──→ ACTIVE ──(end time)──→ COMPLETED 
 | Reports UI | None | Display `daily_reports` data. Generation logic exists in db.js. |
 | Settings persistence | None | Notification toggles are component-local state, not persisted to DB. |
 | Quest panel on dashboard | None | Quests currently only visible in Tomorrow modal. Should show on main sidebar. |
-| Report/finalization extraction | None | `generateDailyReport()` and `finalizePreviousDay()` still in db.js. Could move to engine.js. Not urgent. |
+| Report/finalization extraction | None | `generateDailyReport()` and `finalizePreviousDay()` still in db.js. Could move to engine.svelte.js. Not urgent. |
 
 ---
 
@@ -289,4 +289,4 @@ v1 is: app runs, shows today's schedule from template, tracks current block in r
 
 ---
 
-_Last verified against codebase: 2026-04-09 (sleep block type, engine.js, component rewiring complete)_
+_Last verified against codebase: 2026-04-09 (sleep block type, engine.svelte.js, component rewiring complete)_
